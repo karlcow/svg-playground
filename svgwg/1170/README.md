@@ -51,7 +51,7 @@ WebKit 22626.1.10 is the system WebKit of macOS 27.3 (the engine of Safari 27.3)
 
 ### probe-svgview-spaces.html
 
-| fragment | Safari 27.0 (Aug) | Firefox 156 (Aug) | Chrome 153 (Aug) | Firefox 161 (Nov) | Chrome 159 (Nov) |
+| fragment | STP (Aug) | Firefox 156 (Aug) | Chrome 153 (Aug) | Firefox 161 (Nov) | Chrome 159 (Nov) |
 |---|---|---|---|---|---|
 | `#svgView(viewBox(100,0,100,100))` | yes | yes | yes | yes | yes |
 | `#svgView(viewBox(100, 0, 100, 100))` | yes | yes | yes | yes | yes |
@@ -67,7 +67,7 @@ WebKit 22626.1.10 is the system WebKit of macOS 27.3 (the engine of Safari 27.3)
 | `#svgView(viewBox(100%2C0%2C100%2C100))` | not in that version | not in that version | not in that version | yes | yes |
 | `#svgView%28viewBox%28100%2C0%2C100%2C100%29%29` | not in that version | not in that version | not in that version | yes | yes |
 
-August runs on 2026-08-20, November runs on 2026-11-10. The three escaped-punctuation rows were added to the page after the August runs.
+August runs on 2026-08-20; the WebKit one is a Safari Technology Preview release of that time (user agent Version/27.0, release number not recorded). November runs on 2026-11-10. The three escaped-punctuation rows were added to the page after the August runs.
 
 ### Changes since August
 
