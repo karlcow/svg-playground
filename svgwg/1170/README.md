@@ -16,6 +16,10 @@ SVG 2 says "Spaces are allowed in fragment specifications" and that fragment ide
 
 Both draw a 200 by 200 SVG of four coloured squares through an `img`, with the fragment added to its URL. One colour left means the view was applied, four colours mean the fragment was ignored.
 
+## Known problem in current WebKit
+
+Safari Technology Preview 256 and WebKit trunk builds from November 2026 fail the controls of both pages: no `svgView()` fragment is applied when an SVG image is drawn into a canvas, even the plain `#svgView(viewBox(100,0,100,100))`. The same images show the fragment on screen. This is a WebKit regression unrelated to this issue, so a WebKit run with `controls_passed: false` says nothing about the question here. The Safari 27.3 engine (WebKit 22626.1.10) passes.
+
 ## Results
 
 From the files in [results/](results/). "yes" means the view was applied. Runs whose controls failed are not counted.
@@ -45,22 +49,25 @@ From the files in [results/](results/). "yes" means the view was applied. Runs w
 
 WebKit 22626.1.10 is the system WebKit of macOS 27.3 (the engine of Safari 27.3) in an embedded view, 2026-11-09; its user agent string says Version/26.4. Firefox 161.0 and Chrome 159.0.0.0, 2026-11-10. Safari Technology Preview 256 (build 22627.1.6.3, user agent Version/27.0) failed the controls of both probes on 2026-11-10: no fragment is applied at all, not even the plain one, when the image is drawn into a canvas. That is a WebKit regression on trunk, being investigated, and those runs are left out.
 
-### probe-svgview-spaces.html, August 2026
+### probe-svgview-spaces.html
 
-| fragment | Safari 27.0 | Firefox 156 | Chrome 153 |
-|---|---|---|---|
-| `#svgView(viewBox(100,0,100,100))` | yes | yes | yes |
-| `#svgView(viewBox(100, 0, 100, 100))` | yes | yes | yes |
-| `#svgView(viewBox(100,%200,%20100,%20100))` | yes | yes | yes |
-| `#svgView( viewBox(100,0,100,100) )` | no | no | no |
-| `#svgView(%20viewBox(100,0,100,100)%20)` | no | no | no |
-| `#svgView(viewBox( 100,0,100,100 ))` | no | yes | no |
-| `#svgView(viewBox(100 0 100 100))` | yes | yes | yes |
-| `#svgView(viewBox(100,0,100,100) ; preserveAspectRatio(none))` | no | no | no |
-| `#svgView(viewBox(100,0,100,100)%20;%20preserveAspectRatio(none))` | no | no | no |
-| `#%20svgView(viewBox(100,0,100,100))%20` | no | no | no |
+| fragment | Safari 27.0 (Aug) | Firefox 156 (Aug) | Chrome 153 (Aug) | Firefox 161 (Nov) | Chrome 159 (Nov) |
+|---|---|---|---|---|---|
+| `#svgView(viewBox(100,0,100,100))` | yes | yes | yes | yes | yes |
+| `#svgView(viewBox(100, 0, 100, 100))` | yes | yes | yes | yes | yes |
+| `#svgView(viewBox(100,%200,%20100,%20100))` | yes | yes | yes | yes | yes |
+| `#svgView( viewBox(100,0,100,100) )` | no | no | no | no | yes |
+| `#svgView(%20viewBox(100,0,100,100)%20)` | no | no | no | no | yes |
+| `#svgView(viewBox( 100,0,100,100 ))` | no | yes | no | yes | no |
+| `#svgView(viewBox(100 0 100 100))` | yes | yes | yes | yes | yes |
+| `#svgView(viewBox(100,0,100,100) ; preserveAspectRatio(none))` | no | no | no | no | yes |
+| `#svgView(viewBox(100,0,100,100)%20;%20preserveAspectRatio(none))` | no | no | no | no | yes |
+| `#%20svgView(viewBox(100,0,100,100))%20` | no | no | no | no | no |
+| `#svgView%28viewBox(100,0,100,100)%29` | not in that version | not in that version | not in that version | yes | yes |
+| `#svgView(viewBox(100%2C0%2C100%2C100))` | not in that version | not in that version | not in that version | yes | yes |
+| `#svgView%28viewBox%28100%2C0%2C100%2C100%29%29` | not in that version | not in that version | not in that version | yes | yes |
 
-All three on 2026-08-20.
+August runs on 2026-08-20, November runs on 2026-11-10. The three escaped-punctuation rows were added to the page after the August runs.
 
 ### Changes since August
 
