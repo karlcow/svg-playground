@@ -22,7 +22,7 @@ From the files in [results/](results/). "yes" means the view was applied. Runs w
 
 ### probe-svgview-whitespace-escaping.html, November 2026
 
-| fragment | WebKit 26.4 | Firefox 161 | Chrome 159 |
+| fragment | WebKit 22626.1.10 | Firefox 161 | Chrome 159 |
 |---|---|---|---|
 | `#svgView(viewBox(100,0,100,100))` | yes | yes | yes |
 | `#svgView(viewBox(100, 0, 100, 100))` | yes | yes | yes |
@@ -43,7 +43,7 @@ From the files in [results/](results/). "yes" means the view was applied. Runs w
 | `#xywh=100,0,100,100` | no | yes | no |
 | `#%78ywh=100,0,100,100` | no | yes | no |
 
-WebKit 26.4 is the system WebKit in an embedded view, 2026-11-09. Firefox 161.0 and Chrome 159.0.0.0, 2026-11-10. A Safari 27.0 run on 2026-11-10 failed its controls (no fragment applied at all, not even the plain one) and is left out until it is understood.
+WebKit 22626.1.10 is the system WebKit of macOS 27.3 (the engine of Safari 27.3) in an embedded view, 2026-11-09; its user agent string says Version/26.4. Firefox 161.0 and Chrome 159.0.0.0, 2026-11-10. Safari Technology Preview 256 (build 22627.1.6.3, user agent Version/27.0) failed the controls of both probes on 2026-11-10: no fragment is applied at all, not even the plain one, when the image is drawn into a canvas. That is a WebKit regression on trunk, being investigated, and those runs are left out.
 
 ### probe-svgview-spaces.html, August 2026
 
