@@ -18,7 +18,7 @@ Both draw a 200 by 200 SVG of four coloured squares through an `img`, with the f
 
 ## Known problem in current WebKit
 
-Safari Technology Preview 256 and WebKit trunk builds from November 2026 fail the controls of both pages: no `svgView()` fragment is applied when an SVG image is drawn into a canvas, even the plain `#svgView(viewBox(100,0,100,100))`. The same images show the fragment on screen. This is a WebKit regression unrelated to this issue, so a WebKit run with `controls_passed: false` says nothing about the question here. The Safari 27.3 engine (WebKit 22626.1.10) passes.
+Safari Technology Preview 256 and WebKit trunk builds from November 2026 fail the controls of both pages: no `svgView()` fragment is applied when an SVG image is drawn into a canvas, even the plain `#svgView(viewBox(100,0,100,100))`. The same images show the fragment on screen. This is a WebKit regression unrelated to this issue (https://bugs.webkit.org/show_bug.cgi?id=330747), so a WebKit run with `controls_passed: false` says nothing about the question here. The Safari 27.3 engine (WebKit 22626.1.10) passes.
 
 ## Results
 
