@@ -1,0 +1,239 @@
+{
+  "probe": "probe-svgview-whitespace-escaping",
+  "issue": "https://github.com/w3c/svgwg/issues/1170",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15",
+  "engine_hint": "webkit",
+  "character_set": "UTF-8",
+  "controls_passed": true,
+  "note": "controls_passed false means the measurement is not trustworthy: either the blob URL never loaded or the canvas readback failed. Nothing else in this payload should be quoted.",
+  "rows": [
+    {
+      "id": "ctl_no_fragment",
+      "fragment": "",
+      "expected": "four",
+      "observed": "fragment discarded",
+      "verdict": "no view, correct",
+      "raw": {
+        "distinct": 4,
+        "dominant": "212,104,71",
+        "pct": 25
+      }
+    },
+    {
+      "id": "ctl_canonical",
+      "fragment": "#svgView(viewBox(100,0,100,100))",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "after_commas",
+      "fragment": "#svgView(viewBox(100, 0, 100, 100))",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "instead_of_commas",
+      "fragment": "#svgView(viewBox(100 0 100 100))",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "inside_svgview_parens",
+      "fragment": "#svgView( viewBox(100,0,100,100) )",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 4,
+        "dominant": "212,104,71",
+        "pct": 25
+      }
+    },
+    {
+      "id": "around_semicolon",
+      "fragment": "#svgView(viewBox(100,0,100,100) ; preserveAspectRatio(none))",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 5,
+        "dominant": "0,0,0",
+        "pct": 50
+      }
+    },
+    {
+      "id": "leading_trailing",
+      "fragment": "#%20svgView(viewBox(100,0,100,100))%20",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 4,
+        "dominant": "212,104,71",
+        "pct": 25
+      }
+    },
+    {
+      "id": "viewbox_leading_only",
+      "fragment": "#svgView(viewBox( 100,0,100,100))",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "viewbox_trailing_only",
+      "fragment": "#svgView(viewBox(100,0,100,100 ))",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 4,
+        "dominant": "212,104,71",
+        "pct": 25
+      }
+    },
+    {
+      "id": "viewbox_both",
+      "fragment": "#svgView(viewBox( 100,0,100,100 ))",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 4,
+        "dominant": "212,104,71",
+        "pct": 25
+      }
+    },
+    {
+      "id": "pct3b_semicolon",
+      "fragment": "#svgView(viewBox(100,0,100,100)%3BpreserveAspectRatio(none))",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "pct28_parens",
+      "fragment": "#svgView%28viewBox(100,0,100,100)%29",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "pct2c_commas",
+      "fragment": "#svgView(viewBox(100%2C0%2C100%2C100))",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "pct_fully_escaped",
+      "fragment": "#svgView%28viewBox%28100%2C0%2C100%2C100%29%29",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "pct20_after_commas",
+      "fragment": "#svgView(viewBox(100,%200,%20100,%20100))",
+      "expected": "view",
+      "observed": "view applied",
+      "verdict": "accepted",
+      "raw": {
+        "distinct": 1,
+        "dominant": "42,157,143",
+        "pct": 100
+      }
+    },
+    {
+      "id": "pct20_inside_parens",
+      "fragment": "#svgView(%20viewBox(100,0,100,100)%20)",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 4,
+        "dominant": "212,104,71",
+        "pct": 25
+      }
+    },
+    {
+      "id": "pct20_around_semicolon",
+      "fragment": "#svgView(viewBox(100,0,100,100)%20;%20preserveAspectRatio(none))",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 5,
+        "dominant": "0,0,0",
+        "pct": 50
+      }
+    },
+    {
+      "id": "xywh_literal",
+      "fragment": "#xywh=100,0,100,100",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 4,
+        "dominant": "212,104,71",
+        "pct": 25
+      }
+    },
+    {
+      "id": "xywh_encoded",
+      "fragment": "#%78ywh=100,0,100,100",
+      "expected": "view",
+      "observed": "fragment discarded",
+      "verdict": "rejected",
+      "raw": {
+        "distinct": 4,
+        "dominant": "212,104,71",
+        "pct": 25
+      }
+    }
+  ]
+}

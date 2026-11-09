@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>probe-svgview-spaces</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/linking.html#SVGFragmentIdentifiersDefinitions">
+<!--
+  Which space placements does svgView() accept?
+
+  SVG 2 16.3.2 says, in prose: "Spaces are allowed in fragment specifications."
+  A combined form was measured on 2026-08-20 and rejected by all three engines.
+  That single result cannot say WHICH space is the problem, and it cannot separate
+  two quite different failures:
+
+    1. the svgView parser rejects a space character; or
+    2. the URL parser percent-encodes the space to %20 and the svgView parser
+       never decodes it.
+
+  Those look identical from the outside and have different fixes, so each space
+  placement is measured on its own, and each is paired with an explicitly
+  percent-encoded twin.
+
+  OBSERVABLE
+  ----------
+  A 200x200 four-quadrant SVG on a fresh blob: URL, drawn through an ATTACHED img,
+  read back from a canvas. viewBox(100,0,100,100) selects the green quadrant, so
+  `solid 0,255,0` means the spec parsed and `4 colours` means it was discarded.
+  Attached, because a rendererless image has its own defect (bug 322167) which
+  would otherwise mask every row.
+
+  For the two rows that add preserveAspectRatio(none) the box is 100x50, so a
+  parsed spec gives solid green and an unparsed one gives four colours; the
+  aspect-ratio behaviour itself is not under test here.
+
+  WHAT THE ENCODED TWINS TELL YOU
+  -------------------------------
+  If `spaces_after_commas` fails and `pct20_after_commas` also fails, the parser
+  rejects the separator either way and decoding is not the issue. If the literal
+  form fails and the encoded form passes, or the reverse, the difference is in URL
+  handling rather than in the svgView grammar.
+
+  IT ALSO ASKS HOW FAR "MAY BE URL-ESCAPED" REACHES
+  -------------------------------------------------
+  The same section carries a second note: "Fragment identifiers may be url-escaped
+  ... For example semicolons can be escaped as %3B". That clause is unqualified, so
+  the last three rows escape structural characters instead of spaces: the svgView
+  parentheses, the commas, and everything at once. If those are accepted, the note
+  licenses hiding the entire shape of a specification from a literal-text matcher,
+  which is worth knowing before the sentence is left as it stands.
+
+  CONTROLS
+  --------
+  ctl_no_spaces     the same spec with no spaces at all, must be solid green.
+  ctl_no_fragment   no fragment, must be 4 colours.
+  determinism       ctl_no_spaces measured again at the end.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.4rem; max-width: 72rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 3px 7px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ .PASS { color: #060; font-weight: 700; }
+ .FAIL { color: #a00; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .6rem; overflow-x: auto; font-size: 11px; }
+ h2 { font-size: 15px; margin-top: 1.5rem; }
+ code { background: #f0f0f0; padding: 0 2px; font-size: 11px; }
+ .sw { display: inline-block; width: 11px; height: 11px; border: 1px solid #666;
+       vertical-align: -1px; margin-right: 3px; }
+ #host { position: absolute; left: -9999px; top: 0; }
+</style>
+
+<h1>Which spaces does <code>svgView()</code> accept?</h1>
+<p id="status">running&hellip;</p>
+<div id="out"></div>
+<h2>JSON payload</h2>
+<pre id="json">&hellip;</pre>
+<div id="host"></div>
+
+<script>
+const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"'
+  + ' viewBox="0 0 200 200">'
+  + '<rect x="0" y="0" width="100" height="100" fill="#ff0000"/>'
+  + '<rect x="100" y="0" width="100" height="100" fill="#00ff00"/>'
+  + '<rect x="0" y="100" width="100" height="100" fill="#0000ff"/>'
+  + '<rect x="100" y="100" width="100" height="100" fill="#ffff00"/></svg>';
+
+const GREEN = '0,255,0';
+const freshURL = () => URL.createObjectURL(new Blob([SVG], { type: 'image/svg+xml' }));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function measure(frag, w, h) {
+  const img = document.createElement('img');
+  img.width = w || 100;
+  img.height = h || 100;
+  document.getElementById('host').appendChild(img);
+  const url = freshURL() + frag;
+  const ok = await new Promise((r) => {
+    img.onload = () => r(true);
+    img.onerror = () => r(false);
+    img.src = url;
+  });
+  if (!ok) return { error: 'load failed' };
+  img.getBoundingClientRect();
+  await sleep(90);
+  const N = 32;
+  const c = document.createElement('canvas');
+  c.width = c.height = N;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, N, N);
+  let d;
+  try {
+    d = ctx.getImageData(0, 0, N, N).data;
+  } catch (e) {
+    return { error: 'cannot read pixels (' + e.name + ')' };
+  }
+  const m = new Map();
+  for (let i = 0; i < d.length; i += 4) {
+    const k = d[i] + ',' + d[i + 1] + ',' + d[i + 2];
+    m.set(k, (m.get(k) || 0) + 1);
+  }
+  const s = [...m.entries()].sort((a, b) => b[1] - a[1]);
+  return {
+    distinct: s.length, dominant: s[0][0],
+    pct: Math.round(s[0][1] / (N * N) * 100),
+    resolved_src: img.src
+  };
+}
+
+const CASES = [
+  { id: 'ctl_no_fragment', frag: '', want: 'four' },
+  { id: 'ctl_no_spaces', frag: '#svgView(viewBox(100,0,100,100))', want: 'green' },
+
+  { id: 'spaces_after_commas', frag: '#svgView(viewBox(100, 0, 100, 100))', want: 'green',
+    note: 'spaces after the commas separating the four numbers' },
+  { id: 'pct20_after_commas', frag: '#svgView(viewBox(100,%200,%20100,%20100))', want: 'green',
+    note: 'the same, written %20 so the URL parser has nothing to encode' },
+
+  { id: 'spaces_inside_parens', frag: '#svgView( viewBox(100,0,100,100) )', want: 'green',
+    note: 'spaces just inside the svgView parentheses' },
+  { id: 'pct20_inside_parens', frag: '#svgView(%20viewBox(100,0,100,100)%20)', want: 'green',
+    note: 'the same, percent-encoded' },
+
+  { id: 'spaces_inside_viewbox_parens', frag: '#svgView(viewBox( 100,0,100,100 ))', want: 'green',
+    note: 'spaces just inside the viewBox parentheses' },
+
+  { id: 'space_instead_of_comma', frag: '#svgView(viewBox(100 0 100 100))', want: 'green',
+    note: 'ViewBoxParams are the viewBox attribute values, and that attribute accepts'
+        + ' whitespace-separated numbers, so this should parse on those grounds alone' },
+
+  { id: 'spaces_around_semicolon', frag: '#svgView(viewBox(100,0,100,100) ; preserveAspectRatio(none))',
+    w: 100, h: 50, want: 'green', note: 'spaces around the attribute separator' },
+  { id: 'pct20_around_semicolon', frag: '#svgView(viewBox(100,0,100,100)%20;%20preserveAspectRatio(none))',
+    w: 100, h: 50, want: 'green', note: 'the same, percent-encoded' },
+
+  { id: 'leading_trailing_space', frag: '#%20svgView(viewBox(100,0,100,100))%20', want: 'green',
+    note: 'space before and after the whole specification' },
+
+  // The note in 16.3.2 says "Fragment identifiers may be url-escaped", without
+  // qualification, and gives %3B for a semicolon as its example. These three ask
+  // how far that unqualified clause reaches: if a structural character can be
+  // escaped, the whole shape of a specification can be hidden from a parser that
+  // matches on literal text. %3B itself is covered by the surface probe and by
+  // svgview-escaped-semicolon.html, so it is not repeated here.
+  { id: 'pct28_svgview_parens', frag: '#svgView%28viewBox(100,0,100,100)%29', want: 'green',
+    note: 'the svgView parentheses escaped as %28 and %29' },
+  { id: 'pct2c_commas', frag: '#svgView(viewBox(100%2C0%2C100%2C100))', want: 'green',
+    note: 'the commas between the numbers escaped as %2C' },
+  { id: 'fully_escaped', frag: '#svgView%28viewBox%28100%2C0%2C100%2C100%29%29', want: 'green',
+    note: 'every parenthesis and comma escaped, so nothing structural is a literal' }
+];
+
+(async () => {
+  const rows = [];
+  for (const c of CASES) {
+    const m = await measure(c.frag, c.w, c.h);
+    let observed = 'unknown';
+    if (m.error) observed = m.error;
+    else if (m.distinct === 1) observed = 'solid ' + m.dominant;
+    else observed = m.distinct + ' colours';
+    const parsed = !m.error && m.distinct === 1 && m.dominant === GREEN;
+    rows.push({
+      id: c.id, fragment: c.frag || '(none)', box: (c.w || 100) + 'x' + (c.h || 100),
+      note: c.note || 'control', want: c.want, observed: observed,
+      spec_parsed: parsed,
+      verdict: c.want === 'four' ? (!parsed && m.distinct === 4 ? 'PASS' : 'FAIL')
+                                 : (parsed ? 'PASS' : 'FAIL'),
+      measured: m
+    });
+  }
+
+  const det = await measure('#svgView(viewBox(100,0,100,100))');
+  const ctl = rows.find((r) => r.id === 'ctl_no_spaces');
+  const nofrag = rows.find((r) => r.id === 'ctl_no_fragment');
+
+  const controls = {
+    no_spaces_parses: ctl.spec_parsed === true,
+    no_fragment_gives_four: nofrag.measured.distinct === 4,
+    pixels_readable: !nofrag.measured.error,
+    determinism: !det.error && det.distinct === 1 && det.dominant === GREEN
+  };
+  const controls_passed = Object.keys(controls).every((k) => controls[k]);
+
+  const spaceRows = rows.filter((r) => r.id.indexOf('ctl_') !== 0);
+  const engine_hint = /Firefox\//.test(navigator.userAgent) ? 'gecko'
+    : /(Chrome|Chromium)\//.test(navigator.userAgent) ? 'blink'
+    : /AppleWebKit/.test(navigator.userAgent) ? 'webkit' : 'unknown';
+
+  const payload = {
+    probe: 'probe-svgview-spaces',
+    question: 'which space placements does svgView() accept?',
+    spec: 'SVG 2 16.3.2: "Spaces are allowed in fragment specifications."',
+    user_agent: navigator.userAgent,
+    engine_hint: engine_hint,
+    character_set: document.characterSet,
+    controls: controls,
+    controls_passed: controls_passed,
+    summary: {
+      accepted: spaceRows.filter((r) => r.spec_parsed).map((r) => r.id),
+      rejected: spaceRows.filter((r) => !r.spec_parsed).map((r) => r.id)
+    },
+    rows: rows
+  };
+
+  const asciiJSON = (o) => JSON.stringify(o, null, 1)
+    .replace(/[\u007f-\uffff]/g,
+             (ch) => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
+
+  let h = '<h2>Controls</h2><table><tr><th>control</th><th>result</th></tr>';
+  for (const k in controls) {
+    h += '<tr><td>' + k + '</td><td class="' + (controls[k] ? 'PASS' : 'FAIL') + '">'
+       + (controls[k] ? 'PASS' : 'FAIL') + '</td></tr>';
+  }
+  h += '</table>';
+  if (!controls_passed) h += '<p class="FAIL">A CONTROL FAILED. Run is void.</p>';
+
+  h += '<table><tr><th>id</th><th>fragment</th><th>box</th><th>what it is</th>'
+     + '<th>observed</th><th>spec says</th></tr>';
+  for (const r of rows) {
+    const sw = /^solid (.+)$/.exec(r.observed);
+    const obs = sw ? '<span class="sw" style="background:rgb(' + sw[1] + ')"></span>' + r.observed
+                   : r.observed;
+    h += '<tr><td>' + r.id + '</td><td><code>' + r.fragment.replace(/&/g, '&amp;')
+       + '</code></td><td>' + r.box + '</td><td>' + r.note + '</td><td>' + obs
+       + '</td><td class="' + (r.verdict === 'PASS' ? 'PASS' : 'FAIL') + '">'
+       + (r.verdict === 'PASS' ? 'as specified' : 'NOT as specified') + '</td></tr>';
+  }
+  h += '</table>';
+
+  h += '<h2>Summary</h2><p>accepted: <code>' + (payload.summary.accepted.join(', ') || 'none')
+     + '</code><br>rejected: <code>' + (payload.summary.rejected.join(', ') || 'none')
+     + '</code></p>';
+
+  document.getElementById('out').innerHTML = h;
+  document.getElementById('json').textContent = asciiJSON(payload);
+  document.getElementById('status').textContent =
+    controls_passed ? 'done' : 'done - CONTROL FAILED, run is void';
+  window.payload = payload;
+})().catch((e) => {
+  const s = document.getElementById('status');
+  s.textContent = 'PROBE THREW: ' + (e && e.message || e);
+  s.className = 'FAIL';
+});
+</script>
+
+<script>
+addEventListener('error', (e) => {
+  const s = document.getElementById('status');
+  if (s && !/done/.test(s.textContent)) {
+    s.textContent = 'PROBE ERROR: ' + e.message; s.className = 'FAIL';
+  }
+});
+addEventListener('unhandledrejection', (e) => {
+  const s = document.getElementById('status');
+  if (s) { s.textContent = 'PROBE REJECTION: ' + e.reason; s.className = 'FAIL'; }
+});
+</script>
+
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons — CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload  — clipboard, for pasting into a conversation or an editor.
+//   Download JSON      — writes a correctly-named file where the browser supports
+//                        it. MiniBrowser had no download UI until Karl added one on
+//                        2026-08-16; older builds render the blob instead of saving
+//                        it, and Copy is the route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway — fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet — wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked — the payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet — wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case — the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + ' — if nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + ') — use Copy instead', false);
+    }
+  });
+})();
+</script>

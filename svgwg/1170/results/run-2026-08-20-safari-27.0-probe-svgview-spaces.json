@@ -1,0 +1,208 @@
+{
+ "probe": "probe-svgview-spaces",
+ "question": "which space placements does svgView() accept?",
+ "spec": "SVG 2 16.3.2: \"Spaces are allowed in fragment specifications.\"",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "controls": {
+  "no_spaces_parses": true,
+  "no_fragment_gives_four": true,
+  "pixels_readable": true,
+  "determinism": true
+ },
+ "controls_passed": true,
+ "summary": {
+  "accepted": [
+   "spaces_after_commas",
+   "pct20_after_commas",
+   "space_instead_of_comma"
+  ],
+  "rejected": [
+   "spaces_inside_parens",
+   "pct20_inside_parens",
+   "spaces_inside_viewbox_parens",
+   "spaces_around_semicolon",
+   "pct20_around_semicolon",
+   "leading_trailing_space"
+  ]
+ },
+ "rows": [
+  {
+   "id": "ctl_no_fragment",
+   "fragment": "(none)",
+   "box": "100x100",
+   "note": "control",
+   "want": "four",
+   "observed": "4 colours",
+   "spec_parsed": false,
+   "verdict": "PASS",
+   "measured": {
+    "distinct": 4,
+    "dominant": "255,0,0",
+    "pct": 25,
+    "resolved_src": "blob:null/90c13ec4-4e2a-474c-81b0-d621f41bc9b9"
+   }
+  },
+  {
+   "id": "ctl_no_spaces",
+   "fragment": "#svgView(viewBox(100,0,100,100))",
+   "box": "100x100",
+   "note": "control",
+   "want": "green",
+   "observed": "solid 0,255,0",
+   "spec_parsed": true,
+   "verdict": "PASS",
+   "measured": {
+    "distinct": 1,
+    "dominant": "0,255,0",
+    "pct": 100,
+    "resolved_src": "blob:null/e3510cd5-627b-4da9-8410-366fa7f10d4c#svgView(viewBox(100,0,100,100))"
+   }
+  },
+  {
+   "id": "spaces_after_commas",
+   "fragment": "#svgView(viewBox(100, 0, 100, 100))",
+   "box": "100x100",
+   "note": "spaces after the commas separating the four numbers",
+   "want": "green",
+   "observed": "solid 0,255,0",
+   "spec_parsed": true,
+   "verdict": "PASS",
+   "measured": {
+    "distinct": 1,
+    "dominant": "0,255,0",
+    "pct": 100,
+    "resolved_src": "blob:null/c7d1406f-7d74-49f5-9de6-af8b9e42c930#svgView(viewBox(100,%200,%20100,%20100))"
+   }
+  },
+  {
+   "id": "pct20_after_commas",
+   "fragment": "#svgView(viewBox(100,%200,%20100,%20100))",
+   "box": "100x100",
+   "note": "the same, written %20 so the URL parser has nothing to encode",
+   "want": "green",
+   "observed": "solid 0,255,0",
+   "spec_parsed": true,
+   "verdict": "PASS",
+   "measured": {
+    "distinct": 1,
+    "dominant": "0,255,0",
+    "pct": 100,
+    "resolved_src": "blob:null/2e93641a-31bf-4be6-80a4-bbc9f028f270#svgView(viewBox(100,%200,%20100,%20100))"
+   }
+  },
+  {
+   "id": "spaces_inside_parens",
+   "fragment": "#svgView( viewBox(100,0,100,100) )",
+   "box": "100x100",
+   "note": "spaces just inside the svgView parentheses",
+   "want": "green",
+   "observed": "4 colours",
+   "spec_parsed": false,
+   "verdict": "FAIL",
+   "measured": {
+    "distinct": 4,
+    "dominant": "255,0,0",
+    "pct": 25,
+    "resolved_src": "blob:null/50332e9f-7444-4012-857f-10d4e805e1c8#svgView(%20viewBox(100,0,100,100)%20)"
+   }
+  },
+  {
+   "id": "pct20_inside_parens",
+   "fragment": "#svgView(%20viewBox(100,0,100,100)%20)",
+   "box": "100x100",
+   "note": "the same, percent-encoded",
+   "want": "green",
+   "observed": "4 colours",
+   "spec_parsed": false,
+   "verdict": "FAIL",
+   "measured": {
+    "distinct": 4,
+    "dominant": "255,0,0",
+    "pct": 25,
+    "resolved_src": "blob:null/b1652b44-57d0-4390-bdb6-d48a1eb3ce70#svgView(%20viewBox(100,0,100,100)%20)"
+   }
+  },
+  {
+   "id": "spaces_inside_viewbox_parens",
+   "fragment": "#svgView(viewBox( 100,0,100,100 ))",
+   "box": "100x100",
+   "note": "spaces just inside the viewBox parentheses",
+   "want": "green",
+   "observed": "4 colours",
+   "spec_parsed": false,
+   "verdict": "FAIL",
+   "measured": {
+    "distinct": 4,
+    "dominant": "255,0,0",
+    "pct": 25,
+    "resolved_src": "blob:null/98fe5ad9-0337-4dc6-983f-2bbbca22a64d#svgView(viewBox(%20100,0,100,100%20))"
+   }
+  },
+  {
+   "id": "space_instead_of_comma",
+   "fragment": "#svgView(viewBox(100 0 100 100))",
+   "box": "100x100",
+   "note": "ViewBoxParams are the viewBox attribute values, and that attribute accepts whitespace-separated numbers, so this should parse on those grounds alone",
+   "want": "green",
+   "observed": "solid 0,255,0",
+   "spec_parsed": true,
+   "verdict": "PASS",
+   "measured": {
+    "distinct": 1,
+    "dominant": "0,255,0",
+    "pct": 100,
+    "resolved_src": "blob:null/52c06d42-49ca-4023-b9db-491a5dcb42b3#svgView(viewBox(100%200%20100%20100))"
+   }
+  },
+  {
+   "id": "spaces_around_semicolon",
+   "fragment": "#svgView(viewBox(100,0,100,100) ; preserveAspectRatio(none))",
+   "box": "100x50",
+   "note": "spaces around the attribute separator",
+   "want": "green",
+   "observed": "5 colours",
+   "spec_parsed": false,
+   "verdict": "FAIL",
+   "measured": {
+    "distinct": 5,
+    "dominant": "0,0,0",
+    "pct": 50,
+    "resolved_src": "blob:null/5a9d5f04-7324-4b56-85fb-be21c5fcb753#svgView(viewBox(100,0,100,100)%20;%20preserveAspectRatio(none))"
+   }
+  },
+  {
+   "id": "pct20_around_semicolon",
+   "fragment": "#svgView(viewBox(100,0,100,100)%20;%20preserveAspectRatio(none))",
+   "box": "100x50",
+   "note": "the same, percent-encoded",
+   "want": "green",
+   "observed": "5 colours",
+   "spec_parsed": false,
+   "verdict": "FAIL",
+   "measured": {
+    "distinct": 5,
+    "dominant": "0,0,0",
+    "pct": 50,
+    "resolved_src": "blob:null/cb9f1e1e-3761-4b6e-bda5-508910277fbd#svgView(viewBox(100,0,100,100)%20;%20preserveAspectRatio(none))"
+   }
+  },
+  {
+   "id": "leading_trailing_space",
+   "fragment": "#%20svgView(viewBox(100,0,100,100))%20",
+   "box": "100x100",
+   "note": "space before and after the whole specification",
+   "want": "green",
+   "observed": "4 colours",
+   "spec_parsed": false,
+   "verdict": "FAIL",
+   "measured": {
+    "distinct": 4,
+    "dominant": "255,0,0",
+    "pct": 25,
+    "resolved_src": "blob:null/67c4a9ba-112a-4cd6-a813-b556f40ad819#%20svgView(viewBox(100,0,100,100))%20"
+   }
+  }
+ ]
+}
