@@ -1,0 +1,204 @@
+{
+ "probe": "probe-url-fragment-decoding-clip-filter",
+ "date": "2026-11-10T22:31:23.411Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "summary": {
+  "fill_style": {
+   "enc_ascii": true,
+   "enc_space": true,
+   "utf8_enc": true
+  },
+  "clip_path_attr": {
+   "enc_ascii": false,
+   "enc_space": false,
+   "utf8_enc": false
+  },
+  "clip_path_style": {
+   "enc_ascii": false,
+   "enc_space": false,
+   "utf8_enc": false
+  },
+  "filter_attr": {
+   "enc_ascii": false,
+   "enc_space": false,
+   "utf8_enc": false
+  },
+  "filter_style": {
+   "enc_ascii": false,
+   "enc_space": false,
+   "utf8_enc": false
+  },
+  "mask_attr": {
+   "enc_ascii": true,
+   "enc_space": true,
+   "utf8_enc": true
+  },
+  "mask_style": {
+   "enc_ascii": true,
+   "enc_space": true,
+   "utf8_enc": true
+  }
+ },
+ "inline_clip_path": {
+  "controls_ok": true,
+  "enc_ascii": false,
+  "enc_space": false
+ },
+ "rows": {
+  "fill_style": {
+   "hashes": {
+    "plain": "326d2ec5",
+    "plain_again": "326d2ec5",
+    "plain_B": "a862cbd5",
+    "missing": "38699dc5",
+    "enc_ascii": "326d2ec5",
+    "enc_space": "326d2ec5",
+    "utf8_enc": "326d2ec5"
+   },
+   "control_deterministic": true,
+   "control_sees_target": true,
+   "control_missing_visible": true,
+   "resolves_enc_ascii": true,
+   "resolves_enc_space": true,
+   "resolves_utf8_enc": true,
+   "markup_example": "<rect width=\"64\" height=\"64\" style=\"fill:url(#%74gt)\"/>"
+  },
+  "clip_path_attr": {
+   "hashes": {
+    "plain": "d9616dc5",
+    "plain_again": "d9616dc5",
+    "plain_B": "80c16dc5",
+    "missing": "bdf93dc5",
+    "enc_ascii": "bdf93dc5",
+    "enc_space": "bdf93dc5",
+    "utf8_enc": "bdf93dc5"
+   },
+   "control_deterministic": true,
+   "control_sees_target": true,
+   "control_missing_visible": true,
+   "resolves_enc_ascii": false,
+   "resolves_enc_space": false,
+   "resolves_utf8_enc": false,
+   "markup_example": "<rect width=\"64\" height=\"64\" fill=\"blue\" clip-path=\"url(#%74gt)\"/>"
+  },
+  "clip_path_style": {
+   "hashes": {
+    "plain": "d9616dc5",
+    "plain_again": "d9616dc5",
+    "plain_B": "80c16dc5",
+    "missing": "bdf93dc5",
+    "enc_ascii": "bdf93dc5",
+    "enc_space": "bdf93dc5",
+    "utf8_enc": "bdf93dc5"
+   },
+   "control_deterministic": true,
+   "control_sees_target": true,
+   "control_missing_visible": true,
+   "resolves_enc_ascii": false,
+   "resolves_enc_space": false,
+   "resolves_utf8_enc": false,
+   "markup_example": "<rect width=\"64\" height=\"64\" fill=\"blue\" style=\"clip-path:url(#%74gt)\"/>"
+  },
+  "filter_attr": {
+   "hashes": {
+    "plain": "95bf7bc5",
+    "plain_again": "95bf7bc5",
+    "plain_B": "06630fc5",
+    "missing": "bebd85c5",
+    "enc_ascii": "bebd85c5",
+    "enc_space": "bebd85c5",
+    "utf8_enc": "bebd85c5"
+   },
+   "control_deterministic": true,
+   "control_sees_target": true,
+   "control_missing_visible": true,
+   "resolves_enc_ascii": false,
+   "resolves_enc_space": false,
+   "resolves_utf8_enc": false,
+   "markup_example": "<rect x=\"16\" y=\"16\" width=\"32\" height=\"32\" fill=\"blue\" filter=\"url(#%74gt)\"/>"
+  },
+  "filter_style": {
+   "hashes": {
+    "plain": "95bf7bc5",
+    "plain_again": "95bf7bc5",
+    "plain_B": "06630fc5",
+    "missing": "bebd85c5",
+    "enc_ascii": "bebd85c5",
+    "enc_space": "bebd85c5",
+    "utf8_enc": "bebd85c5"
+   },
+   "control_deterministic": true,
+   "control_sees_target": true,
+   "control_missing_visible": true,
+   "resolves_enc_ascii": false,
+   "resolves_enc_space": false,
+   "resolves_utf8_enc": false,
+   "markup_example": "<rect x=\"16\" y=\"16\" width=\"32\" height=\"32\" fill=\"blue\" style=\"filter:url(#%74gt)\"/>"
+  },
+  "mask_attr": {
+   "hashes": {
+    "plain": "d9616dc5",
+    "plain_again": "d9616dc5",
+    "plain_B": "80c16dc5",
+    "missing": "bdf93dc5",
+    "enc_ascii": "d9616dc5",
+    "enc_space": "d9616dc5",
+    "utf8_enc": "d9616dc5"
+   },
+   "control_deterministic": true,
+   "control_sees_target": true,
+   "control_missing_visible": true,
+   "resolves_enc_ascii": true,
+   "resolves_enc_space": true,
+   "resolves_utf8_enc": true,
+   "markup_example": "<rect width=\"64\" height=\"64\" fill=\"blue\" mask=\"url(#%74gt)\"/>"
+  },
+  "mask_style": {
+   "hashes": {
+    "plain": "d9616dc5",
+    "plain_again": "d9616dc5",
+    "plain_B": "80c16dc5",
+    "missing": "bdf93dc5",
+    "enc_ascii": "d9616dc5",
+    "enc_space": "d9616dc5",
+    "utf8_enc": "d9616dc5"
+   },
+   "control_deterministic": true,
+   "control_sees_target": true,
+   "control_missing_visible": true,
+   "resolves_enc_ascii": true,
+   "resolves_enc_space": true,
+   "resolves_utf8_enc": true,
+   "markup_example": "<rect width=\"64\" height=\"64\" fill=\"blue\" style=\"mask:url(#%74gt)\"/>"
+  }
+ },
+ "inline": {
+  "plain": {
+   "hit_rect_right_half": false,
+   "hit_element": "svg",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\"><clipPath id=\"c-plain\"><rect width=\"32\" height=\"64\"/></clipPath><rect id=\"r-plain\" width=\"64\" height=\"64\" fill=\"blue\" clip-path=\"url(#c-plain)\"/></svg>"
+  },
+  "missing": {
+   "hit_rect_right_half": true,
+   "hit_element": "r-missing",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\"><clipPath id=\"c-miss\"><rect width=\"32\" height=\"64\"/></clipPath><rect id=\"r-missing\" width=\"64\" height=\"64\" fill=\"blue\" clip-path=\"url(#nope-inline)\"/></svg>"
+  },
+  "enc_ascii": {
+   "hit_rect_right_half": true,
+   "hit_element": "r-enc_ascii",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\"><clipPath id=\"c-enc\"><rect width=\"32\" height=\"64\"/></clipPath><rect id=\"r-enc_ascii\" width=\"64\" height=\"64\" fill=\"blue\" clip-path=\"url(#%63-enc)\"/></svg>"
+  },
+  "enc_space": {
+   "hit_rect_right_half": true,
+   "hit_element": "r-enc_space",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\"><clipPath id=\"c sp\"><rect width=\"32\" height=\"64\"/></clipPath><rect id=\"r-enc_space\" width=\"64\" height=\"64\" fill=\"blue\" clip-path=\"url(#c%20sp)\"/></svg>"
+  },
+  "controls_ok": true,
+  "resolves_enc_ascii": false,
+  "resolves_enc_space": false
+ },
+ "note": "Run by Claude in the webkit-agent embedded view: system WebKit 22626.1.10 (Safari 27.3 engine); the user agent says 26.4. File re-laid out from the page payload, values unchanged."
+}
