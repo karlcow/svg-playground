@@ -18,7 +18,7 @@ csswg/<number>/                 https://github.com/w3c/csswg-drafts/issues/<numb
 ```
 
 - The folder name is the number only, so it does not change when the issue title does. The issue title goes in the folder's README.
-- An issue that has not been filed yet has no folder. Put the pages in the folder of the issue it came from, or wait until it has a number.
+- An issue that has not been filed yet has no folder. File the issue first, add the folder, then link to it from the issue (a comment or an edit).
 - A page that serves several issues lives in the folder of the first one; the others link to it from their README.
 
 ## Probes

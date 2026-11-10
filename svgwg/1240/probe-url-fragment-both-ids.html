@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: url(#...) with a percent-encoded fragment, both ids present</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/linking.html#processingURL-target">
+<link rel="help" href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#select-the-indicated-part">
+<!--
+  Probe for svgwg#1240 (split from svgwg#1170).
+
+  Question: when url(#%66%6f%6f) is used and the document has BOTH
+  id="%66%6f%6f" and id="foo", which element is the target?
+
+  - HTML order (select the indicated part): try the fragment as written
+    first, then percent-decoded. Picks id="%66%6f%6f" (BLUE).
+  - Decode only (WebKit since 310443@main, SVGURIReference.cpp): never
+    tries the raw string. Picks id="foo" (GREEN).
+  - Nothing matched: the fallback colour after url() (RED).
+
+  Observable: each case is a standalone SVG document (Blob URL, so no
+  percent-encoding of the markup itself in transit), drawn into a canvas
+  through <img>; the centre pixel is classified as green, blue or red.
+  The same markup is also placed inline beside it, for the eye only; the
+  payload records the image measurement and the inline one separately
+  is NOT measured.
+
+  Controls:
+   - ctl_plain    url(#foo), only id="foo": must be green (must not change).
+   - ctl_decode   url(#%66%6f%6f), only id="foo": green in all three
+                  (WPT svg/pservers/reftests/percent-encoded-fragment-*).
+                  Run twice for determinism.
+   - ctl_missing  url(#bar), no such id: must be red (must change).
+  If ctl_decode is red, the engine predates the decoding fix and the
+  both-ids rows say nothing about order.
+
+  Do NOT infer from this payload how HTML-document navigation (scroll to
+  fragment) behaves; only url() and href references inside an SVG
+  document are measured.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 80rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ .PASS { color: #060; font-weight: 700; }
+ .FAIL { color: #a00; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .6rem; overflow-x: auto; font-size: 11px; margin: 0; }
+ pre.markup { background: #fafafa; border: 1px solid #ddd; white-space: pre; }
+ h2 { font-size: 15px; margin-top: 1.6rem; }
+ canvas { border: 1px solid #ccc; width: 50px; height: 50px; }
+ .inline svg { border: 1px solid #ccc; }
+ .key span { display: inline-block; width: 12px; height: 12px; vertical-align: middle; margin: 0 4px 0 10px; }
+</style>
+
+<h1>url(#%66%6f%6f) when both id="%66%6f%6f" and id="foo" exist</h1>
+<p>Each row is its own SVG document. The rect's fill is a single-stop gradient found by its id, so its colour says which element was the target.
+<span class="key"><span style="background:#008000"></span>green: <code>id="foo"</code> (decoded)
+<span style="background:#0000ff"></span>blue: <code>id="%66%6f%6f"</code> (as written)
+<span style="background:#ff0000"></span>red: no target, fallback</span></p>
+<p id="status">running...</p>
+<table id="out">
+ <thead><tr><th>case</th><th>markup (the exact document drawn)</th><th>measured (image)</th><th>inline, for the eye</th><th>result</th><th>HTML order expects</th><th>decode only expects</th></tr></thead>
+ <tbody></tbody>
+</table>
+<h2>JSON payload</h2>
+<pre id="json">…</pre>
+
+<script>
+const PROBE = 'probe-url-fragment-both-ids';
+
+// One gradient per id. Single stop, so the paint is a flat colour.
+const grad = (id, color) => `<linearGradient id="${id}"><stop stop-color="${color}"/></linearGradient>`;
+const FOO = grad('foo', '#008000');
+const LIT = grad('%66%6f%6f', '#0000ff');
+
+const doc = (defs, body) =>
+  '<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">\n' +
+  ' <defs>\n' + defs.map(d => '  ' + d).join('\n') + '\n </defs>\n' +
+  ' ' + body + '\n</svg>';
+const rect = (ref) => `<rect width="50" height="50" fill="url(${ref}) #ff0000"/>`;
+// <use> variant: the referenced rect carries the colour, missing target draws nothing,
+// so a red rect sits underneath as the fallback.
+const useDoc = (first, second, ref) =>
+  '<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">\n' +
+  ' <defs>\n' +
+  '  ' + first + '\n' +
+  '  ' + second + '\n' +
+  ' </defs>\n' +
+  ' <rect width="50" height="50" fill="#ff0000"/>\n' +
+  ` <use href="${ref}"/>\n` +
+  '</svg>';
+const R_FOO = '<rect id="foo" width="50" height="50" fill="#008000"/>';
+const R_LIT = '<rect id="%66%6f%6f" width="50" height="50" fill="#0000ff"/>';
+
+// expect: [HTML order, decode only]. Written before the first run.
+const CASES = [
+  { id: 'ctl_plain',     ctl: 'green', svg: doc([FOO], rect('#foo')),
+    expect: ['green', 'green'], note: 'control that must not change' },
+  { id: 'ctl_decode',    ctl: 'green', svg: doc([FOO], rect('#%66%6f%6f')),
+    expect: ['green', 'green'], note: 'decoding exists at all (WPT percent-encoded-fragment)' },
+  { id: 'ctl_decode_2',  ctl: 'green', svg: doc([FOO], rect('#%66%6f%6f')),
+    expect: ['green', 'green'], note: 'same as ctl_decode, determinism' },
+  { id: 'ctl_missing',   ctl: 'red',   svg: doc([FOO], rect('#bar')),
+    expect: ['red', 'red'], note: 'control that must change: no target' },
+  { id: 'literal_only',  svg: doc([LIT], rect('#%66%6f%6f')),
+    expect: ['blue', 'red'], note: 'only the literal id exists' },
+  { id: 'both_literal_first', svg: doc([LIT, FOO], rect('#%66%6f%6f')),
+    expect: ['blue', 'green'], note: 'THE question, literal id first in tree order' },
+  { id: 'both_foo_first', svg: doc([FOO, LIT], rect('#%66%6f%6f')),
+    expect: ['blue', 'green'], note: 'THE question, decoded id first in tree order' },
+  { id: 'single_decode', svg: doc([LIT, FOO], rect('#%2566%256f%256f')),
+    expect: ['blue', 'blue'], note: 'decoded once gives "%66%6f%6f"; green would mean decoded twice' },
+  { id: 'use_both_literal_first', svg: useDoc(R_LIT, R_FOO, '#%66%6f%6f'),
+    expect: ['blue', 'green'], note: 'same question through use href instead of fill' },
+  { id: 'use_both_foo_first', svg: useDoc(R_FOO, R_LIT, '#%66%6f%6f'),
+    expect: ['blue', 'green'], note: 'use href, decoded id first' },
+];
+
+function markupCell(text) {
+  const p = document.createElement('pre'); p.className = 'markup'; p.textContent = text; return p;
+}
+
+function classify(r, g, b, a) {
+  if (a < 128) return 'transparent';
+  const ref = { green: [0, 128, 0], blue: [0, 0, 255], red: [255, 0, 0] };
+  let best = 'other', bestD = 60 * 60 * 3;
+  for (const [k, [R, G, B]] of Object.entries(ref)) {
+    const d = (r - R) ** 2 + (g - G) ** 2 + (b - B) ** 2;
+    if (d < bestD) { bestD = d; best = k; }
+  }
+  return best;
+}
+
+function measure(svg) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = 50; c.height = 50;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      let px;
+      try { px = Array.from(ctx.getImageData(25, 25, 1, 1).data); }
+      catch (e) { URL.revokeObjectURL(url); resolve({ canvas: c, color: 'error:' + e.name, px: null }); return; }
+      URL.revokeObjectURL(url);
+      resolve({ canvas: c, color: classify(...px), px });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve({ canvas: null, color: 'error:load', px: null }); };
+    img.src = url;
+  });
+}
+
+const asciiJSON = (o) => JSON.stringify(o, null, 1)
+  .replace(/[\u007f-\uffff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+
+function engineHint(ua) {
+  if (/Firefox\//.test(ua)) return 'gecko';
+  if (/Chrome\/|Chromium\//.test(ua)) return 'blink';
+  if (/AppleWebKit/.test(ua)) return 'webkit';
+  return 'unknown';
+}
+
+(async () => {
+  const tbody = document.querySelector('#out tbody');
+  const results = [];
+  for (const k of CASES) {
+    const m = await measure(k.svg);
+    const tr = document.createElement('tr');
+    const td = (child, cls) => { const t = document.createElement('td'); if (cls) t.className = cls;
+      if (typeof child === 'string') t.textContent = child; else if (child) t.append(child); tr.append(t); return t; };
+    td(k.id + (k.ctl ? ' (control)' : '') + '\n').append(document.createElement('br'), k.note);
+    td(markupCell(k.svg));
+    td(m.canvas || m.color);
+    const inl = document.createElement('div'); inl.className = 'inline';
+    // Inline copy: ids are document-wide in HTML, so each inline copy would see the
+    // other rows' gradients. Shadow root keeps each copy's ids to itself.
+    const host = document.createElement('div'); host.attachShadow({ mode: 'open' }).innerHTML = k.svg;
+    inl.append(host); td(inl);
+    let verdict = 'neither';
+    if (m.color === k.expect[0] && m.color === k.expect[1]) verdict = 'both';
+    else if (m.color === k.expect[0]) verdict = 'html-order';
+    else if (m.color === k.expect[1]) verdict = 'decode-only';
+    td(m.color + '\n(' + verdict + ')', k.ctl ? (m.color === k.ctl ? 'PASS' : 'FAIL') : '');
+    td(k.expect[0]); td(k.expect[1]);
+    tbody.append(tr);
+    results.push({ id: k.id, control: k.ctl || null, color: m.color, pixel: m.px,
+                   expect_html_order: k.expect[0], expect_decode_only: k.expect[1],
+                   matches: verdict, markup: k.svg });
+  }
+  const controls = results.filter(r => r.control);
+  const controls_passed = controls.every(r => r.color === r.control);
+  const pick = (id) => results.find(r => r.id === id).matches;
+  const payload = {
+    probe: PROBE,
+    date: new Date().toISOString(),
+    user_agent: navigator.userAgent,
+    engine_hint: engineHint(navigator.userAgent),
+    character_set: document.characterSet,
+    controls_passed,
+    controls: Object.fromEntries(controls.map(r => [r.id, r.color])),
+    answer: controls_passed ? {
+      fill_literal_first: pick('both_literal_first'),
+      fill_foo_first: pick('both_foo_first'),
+      use_literal_first: pick('use_both_literal_first'),
+      use_foo_first: pick('use_both_foo_first'),
+      literal_only: pick('literal_only'),
+      single_decode: pick('single_decode'),
+    } : 'controls failed, rows not interpretable',
+    results,
+  };
+  document.getElementById('json').textContent = asciiJSON(payload);
+  document.getElementById('status').textContent = 'done. Controls ' + (controls_passed ? 'passed' : 'FAILED') + '.';
+  document.getElementById('status').className = controls_passed ? 'PASS' : 'FAIL';
+})();
+</script>
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
+</html>

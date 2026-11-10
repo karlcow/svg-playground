@@ -1,0 +1,174 @@
+{
+ "probe": "probe-url-fragment-both-ids",
+ "date": "2026-11-10T01:09:17.573Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "controls": {
+  "ctl_plain": "green",
+  "ctl_decode": "green",
+  "ctl_decode_2": "green",
+  "ctl_missing": "red"
+ },
+ "answer": {
+  "fill_literal_first": "decode-only",
+  "fill_foo_first": "decode-only",
+  "use_literal_first": "decode-only",
+  "use_foo_first": "decode-only",
+  "literal_only": "decode-only",
+  "single_decode": "both"
+ },
+ "results": [
+  {
+   "id": "ctl_plain",
+   "control": "green",
+   "color": "green",
+   "pixel": [
+    0,
+    129,
+    0,
+    255
+   ],
+   "expect_html_order": "green",
+   "expect_decode_only": "green",
+   "matches": "both",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <linearGradient id=\"foo\"><stop stop-color=\"#008000\"/></linearGradient>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"url(#foo) #ff0000\"/>\n</svg>"
+  },
+  {
+   "id": "ctl_decode",
+   "control": "green",
+   "color": "green",
+   "pixel": [
+    0,
+    129,
+    0,
+    255
+   ],
+   "expect_html_order": "green",
+   "expect_decode_only": "green",
+   "matches": "both",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <linearGradient id=\"foo\"><stop stop-color=\"#008000\"/></linearGradient>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"url(#%66%6f%6f) #ff0000\"/>\n</svg>"
+  },
+  {
+   "id": "ctl_decode_2",
+   "control": "green",
+   "color": "green",
+   "pixel": [
+    0,
+    129,
+    0,
+    255
+   ],
+   "expect_html_order": "green",
+   "expect_decode_only": "green",
+   "matches": "both",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <linearGradient id=\"foo\"><stop stop-color=\"#008000\"/></linearGradient>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"url(#%66%6f%6f) #ff0000\"/>\n</svg>"
+  },
+  {
+   "id": "ctl_missing",
+   "control": "red",
+   "color": "red",
+   "pixel": [
+    255,
+    0,
+    0,
+    255
+   ],
+   "expect_html_order": "red",
+   "expect_decode_only": "red",
+   "matches": "both",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <linearGradient id=\"foo\"><stop stop-color=\"#008000\"/></linearGradient>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"url(#bar) #ff0000\"/>\n</svg>"
+  },
+  {
+   "id": "literal_only",
+   "control": null,
+   "color": "red",
+   "pixel": [
+    255,
+    0,
+    0,
+    255
+   ],
+   "expect_html_order": "blue",
+   "expect_decode_only": "red",
+   "matches": "decode-only",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <linearGradient id=\"%66%6f%6f\"><stop stop-color=\"#0000ff\"/></linearGradient>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"url(#%66%6f%6f) #ff0000\"/>\n</svg>"
+  },
+  {
+   "id": "both_literal_first",
+   "control": null,
+   "color": "green",
+   "pixel": [
+    0,
+    129,
+    0,
+    255
+   ],
+   "expect_html_order": "blue",
+   "expect_decode_only": "green",
+   "matches": "decode-only",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <linearGradient id=\"%66%6f%6f\"><stop stop-color=\"#0000ff\"/></linearGradient>\n  <linearGradient id=\"foo\"><stop stop-color=\"#008000\"/></linearGradient>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"url(#%66%6f%6f) #ff0000\"/>\n</svg>"
+  },
+  {
+   "id": "both_foo_first",
+   "control": null,
+   "color": "green",
+   "pixel": [
+    0,
+    129,
+    0,
+    255
+   ],
+   "expect_html_order": "blue",
+   "expect_decode_only": "green",
+   "matches": "decode-only",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <linearGradient id=\"foo\"><stop stop-color=\"#008000\"/></linearGradient>\n  <linearGradient id=\"%66%6f%6f\"><stop stop-color=\"#0000ff\"/></linearGradient>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"url(#%66%6f%6f) #ff0000\"/>\n</svg>"
+  },
+  {
+   "id": "single_decode",
+   "control": null,
+   "color": "blue",
+   "pixel": [
+    0,
+    1,
+    255,
+    255
+   ],
+   "expect_html_order": "blue",
+   "expect_decode_only": "blue",
+   "matches": "both",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <linearGradient id=\"%66%6f%6f\"><stop stop-color=\"#0000ff\"/></linearGradient>\n  <linearGradient id=\"foo\"><stop stop-color=\"#008000\"/></linearGradient>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"url(#%2566%256f%256f) #ff0000\"/>\n</svg>"
+  },
+  {
+   "id": "use_both_literal_first",
+   "control": null,
+   "color": "green",
+   "pixel": [
+    0,
+    128,
+    0,
+    255
+   ],
+   "expect_html_order": "blue",
+   "expect_decode_only": "green",
+   "matches": "decode-only",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <rect id=\"%66%6f%6f\" width=\"50\" height=\"50\" fill=\"#0000ff\"/>\n  <rect id=\"foo\" width=\"50\" height=\"50\" fill=\"#008000\"/>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"#ff0000\"/>\n <use href=\"#%66%6f%6f\"/>\n</svg>"
+  },
+  {
+   "id": "use_both_foo_first",
+   "control": null,
+   "color": "green",
+   "pixel": [
+    0,
+    128,
+    0,
+    255
+   ],
+   "expect_html_order": "blue",
+   "expect_decode_only": "green",
+   "matches": "decode-only",
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"50\" height=\"50\">\n <defs>\n  <rect id=\"foo\" width=\"50\" height=\"50\" fill=\"#008000\"/>\n  <rect id=\"%66%6f%6f\" width=\"50\" height=\"50\" fill=\"#0000ff\"/>\n </defs>\n <rect width=\"50\" height=\"50\" fill=\"#ff0000\"/>\n <use href=\"#%66%6f%6f\"/>\n</svg>"
+  }
+ ]
+}
