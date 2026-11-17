@@ -1,0 +1,215 @@
+{
+ "probe": "textpath-undrawn-characters",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:162.0) Gecko/20100101 Firefox/162.0",
+ "engine_hint": "gecko",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "font_error": null,
+ "checks": {
+  "subject: reference extent of A is 10 x 10 at x 10": true,
+  "reference: getNumberOfChars() is 4 (all drawn)": true,
+  "short: start of A is (10, 50)": true,
+  "short: start of B is (20, 50)": true,
+  "index 4 throws IndexSizeError on both": true
+ },
+ "number_of_chars_finding": {
+  "short_number_of_chars": 4,
+  "expected_by_spec": 4,
+  "matches_spec": true
+ },
+ "reading_for_index_2": "skip, today's steps (index 2 gives the same as index 3)",
+ "results": {
+  "short": {
+   "markup": "<svg width=\"640\" height=\"320\" viewBox=\"0 0 160 80\"><path id=\"pShort\" d=\"M 10 50 L 30 50\" fill=\"none\" stroke=\"lightblue\"/><text><textPath href=\"#pShort\">ABCD</textPath></text></svg>",
+   "number_of_chars": 4,
+   "rows": {
+    "0": {
+     "getStartPositionOfChar(i)": {
+      "value": "(10, 50)",
+      "error": null
+     },
+     "getEndPositionOfChar(i)": {
+      "value": "(20, 50)",
+      "error": null
+     },
+     "getExtentOfChar(i)": {
+      "value": "10, 42, 10 x 10",
+      "error": null
+     },
+     "getRotationOfChar(i)": {
+      "value": "0",
+      "error": null
+     }
+    },
+    "1": {
+     "getStartPositionOfChar(i)": {
+      "value": "(20, 50)",
+      "error": null
+     },
+     "getEndPositionOfChar(i)": {
+      "value": "(30, 50)",
+      "error": null
+     },
+     "getExtentOfChar(i)": {
+      "value": "20, 42, 10 x 10",
+      "error": null
+     },
+     "getRotationOfChar(i)": {
+      "value": "0",
+      "error": null
+     }
+    },
+    "2": {
+     "getStartPositionOfChar(i)": {
+      "value": "(25, 50)",
+      "error": null
+     },
+     "getEndPositionOfChar(i)": {
+      "value": "(35, 50)",
+      "error": null
+     },
+     "getExtentOfChar(i)": {
+      "value": "25, 42, 10 x 10",
+      "error": null
+     },
+     "getRotationOfChar(i)": {
+      "value": "0",
+      "error": null
+     }
+    },
+    "3": {
+     "getStartPositionOfChar(i)": {
+      "value": "(25, 50)",
+      "error": null
+     },
+     "getEndPositionOfChar(i)": {
+      "value": "(35, 50)",
+      "error": null
+     },
+     "getExtentOfChar(i)": {
+      "value": "25, 42, 10 x 10",
+      "error": null
+     },
+     "getRotationOfChar(i)": {
+      "value": "0",
+      "error": null
+     }
+    },
+    "4": {
+     "getStartPositionOfChar(i)": {
+      "value": null,
+      "error": "IndexSizeError"
+     },
+     "getEndPositionOfChar(i)": {
+      "value": null,
+      "error": "IndexSizeError"
+     },
+     "getExtentOfChar(i)": {
+      "value": null,
+      "error": "IndexSizeError"
+     },
+     "getRotationOfChar(i)": {
+      "value": null,
+      "error": "IndexSizeError"
+     }
+    }
+   }
+  },
+  "reference": {
+   "markup": "<svg width=\"640\" height=\"320\" viewBox=\"0 0 160 80\"><path id=\"pLong\" d=\"M 10 50 L 110 50\" fill=\"none\" stroke=\"lightblue\"/><text><textPath href=\"#pLong\">ABCD</textPath></text></svg>",
+   "number_of_chars": 4,
+   "rows": {
+    "0": {
+     "getStartPositionOfChar(i)": {
+      "value": "(10, 50)",
+      "error": null
+     },
+     "getEndPositionOfChar(i)": {
+      "value": "(20, 50)",
+      "error": null
+     },
+     "getExtentOfChar(i)": {
+      "value": "10, 42, 10 x 10",
+      "error": null
+     },
+     "getRotationOfChar(i)": {
+      "value": "0",
+      "error": null
+     }
+    },
+    "1": {
+     "getStartPositionOfChar(i)": {
+      "value": "(20, 50)",
+      "error": null
+     },
+     "getEndPositionOfChar(i)": {
+      "value": "(30, 50)",
+      "error": null
+     },
+     "getExtentOfChar(i)": {
+      "value": "20, 42, 10 x 10",
+      "error": null
+     },
+     "getRotationOfChar(i)": {
+      "value": "0",
+      "error": null
+     }
+    },
+    "2": {
+     "getStartPositionOfChar(i)": {
+      "value": "(30, 50)",
+      "error": null
+     },
+     "getEndPositionOfChar(i)": {
+      "value": "(40, 50)",
+      "error": null
+     },
+     "getExtentOfChar(i)": {
+      "value": "30, 42, 10 x 10",
+      "error": null
+     },
+     "getRotationOfChar(i)": {
+      "value": "0",
+      "error": null
+     }
+    },
+    "3": {
+     "getStartPositionOfChar(i)": {
+      "value": "(40, 50)",
+      "error": null
+     },
+     "getEndPositionOfChar(i)": {
+      "value": "(50, 50)",
+      "error": null
+     },
+     "getExtentOfChar(i)": {
+      "value": "40, 42, 10 x 10",
+      "error": null
+     },
+     "getRotationOfChar(i)": {
+      "value": "0",
+      "error": null
+     }
+    },
+    "4": {
+     "getStartPositionOfChar(i)": {
+      "value": null,
+      "error": "IndexSizeError"
+     },
+     "getEndPositionOfChar(i)": {
+      "value": null,
+      "error": "IndexSizeError"
+     },
+     "getExtentOfChar(i)": {
+      "value": null,
+      "error": "IndexSizeError"
+     },
+     "getRotationOfChar(i)": {
+      "value": null,
+      "error": "IndexSizeError"
+     }
+    }
+   }
+  }
+ }
+}
