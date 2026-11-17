@@ -1,0 +1,578 @@
+{
+ "probe": "svgwg-new-ua-display-none-importance",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:162.0) Gecko/20100101 Firefox/162.0",
+ "engine_hint": "gecko",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "spec_expectation": "display none for every target row, in every variant",
+ "targets_matching_spec": 2,
+ "targets_total": 40,
+ "matrix": {
+  "defs": {
+   "default": "inline",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "title": {
+   "default": "inline",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "desc": {
+   "default": "inline",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "metadata": {
+   "default": "inline",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "marker": {
+   "default": "inline",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "linearGradient": {
+   "default": "inline",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "radialGradient": {
+   "default": "inline",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "pattern": {
+   "default": "inline",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "script": {
+   "default": "none",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  },
+  "style": {
+   "default": "none",
+   "author_important": "inline",
+   "presentation_attr": "inline",
+   "style_attr": "inline"
+  }
+ },
+ "cases": [
+  {
+   "id": "defs_default",
+   "kind": "target",
+   "element": "defs",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "defs_author_important",
+   "kind": "target",
+   "element": "defs",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "defs_presentation_attr",
+   "kind": "target",
+   "element": "defs",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "defs_style_attr",
+   "kind": "target",
+   "element": "defs",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "title_default",
+   "kind": "target",
+   "element": "title",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "title_author_important",
+   "kind": "target",
+   "element": "title",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "title_presentation_attr",
+   "kind": "target",
+   "element": "title",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "title_style_attr",
+   "kind": "target",
+   "element": "title",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "desc_default",
+   "kind": "target",
+   "element": "desc",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "desc_author_important",
+   "kind": "target",
+   "element": "desc",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "desc_presentation_attr",
+   "kind": "target",
+   "element": "desc",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "desc_style_attr",
+   "kind": "target",
+   "element": "desc",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "metadata_default",
+   "kind": "target",
+   "element": "metadata",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "metadata_author_important",
+   "kind": "target",
+   "element": "metadata",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "metadata_presentation_attr",
+   "kind": "target",
+   "element": "metadata",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "metadata_style_attr",
+   "kind": "target",
+   "element": "metadata",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "marker_default",
+   "kind": "target",
+   "element": "marker",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "marker_author_important",
+   "kind": "target",
+   "element": "marker",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "marker_presentation_attr",
+   "kind": "target",
+   "element": "marker",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "marker_style_attr",
+   "kind": "target",
+   "element": "marker",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "linearGradient_default",
+   "kind": "target",
+   "element": "linearGradient",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "linearGradient_author_important",
+   "kind": "target",
+   "element": "linearGradient",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "linearGradient_presentation_attr",
+   "kind": "target",
+   "element": "linearGradient",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "linearGradient_style_attr",
+   "kind": "target",
+   "element": "linearGradient",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "radialGradient_default",
+   "kind": "target",
+   "element": "radialGradient",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "radialGradient_author_important",
+   "kind": "target",
+   "element": "radialGradient",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "radialGradient_presentation_attr",
+   "kind": "target",
+   "element": "radialGradient",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "radialGradient_style_attr",
+   "kind": "target",
+   "element": "radialGradient",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "pattern_default",
+   "kind": "target",
+   "element": "pattern",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "pattern_author_important",
+   "kind": "target",
+   "element": "pattern",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "pattern_presentation_attr",
+   "kind": "target",
+   "element": "pattern",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "pattern_style_attr",
+   "kind": "target",
+   "element": "pattern",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "script_default",
+   "kind": "target",
+   "element": "script",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "none",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": true
+  },
+  {
+   "id": "script_author_important",
+   "kind": "target",
+   "element": "script",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "script_presentation_attr",
+   "kind": "target",
+   "element": "script",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "script_style_attr",
+   "kind": "target",
+   "element": "script",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "style_default",
+   "kind": "target",
+   "element": "style",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "none",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": true
+  },
+  {
+   "id": "style_author_important",
+   "kind": "target",
+   "element": "style",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "style_presentation_attr",
+   "kind": "target",
+   "element": "style",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "style_style_attr",
+   "kind": "target",
+   "element": "style",
+   "variant": "style_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "expect_display": "none",
+   "matches_spec": false
+  },
+  {
+   "id": "dup_title_default",
+   "kind": "dup",
+   "element": "title",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 0,
+   "pass": true
+  },
+  {
+   "id": "ctl_g_default",
+   "kind": "control",
+   "element": "g",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 1,
+   "expect_display": "inline",
+   "pass": true
+  },
+  {
+   "id": "ctl_g_presentation_attr_none",
+   "kind": "control",
+   "element": "g",
+   "variant": "presentation_attr",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "none",
+   "client_rects": 0,
+   "expect_display": "none",
+   "pass": true
+  },
+  {
+   "id": "ctl_g_author_important",
+   "kind": "control",
+   "element": "g",
+   "variant": "author_important",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "block",
+   "client_rects": 1,
+   "expect_display": "block",
+   "pass": true
+  },
+  {
+   "id": "ctl_rect_box",
+   "kind": "control",
+   "element": "rect",
+   "variant": "default",
+   "namespace": "http://www.w3.org/2000/svg",
+   "display": "inline",
+   "client_rects": 1,
+   "pass": true
+  },
+  {
+   "id": "ctl_html_title",
+   "kind": "control",
+   "element": "html:title",
+   "variant": "default",
+   "namespace": "http://www.w3.org/1999/xhtml",
+   "display": "none",
+   "client_rects": 0,
+   "expect_display": "none",
+   "pass": true
+  }
+ ]
+}

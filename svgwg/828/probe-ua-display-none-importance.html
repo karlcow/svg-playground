@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: computed display of SVG elements the spec says are always display none</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/struct.html#DescriptionAndTitleElements">
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/styling.html#UAStyleSheet">
+<!--
+  Probe for svgwg#828 (https://github.com/w3c/svgwg/issues/828) and the prose fix
+  in https://github.com/w3c/svgwg/pull/1250. Runs made before the move here carry
+  "svgwg-new-ua-display-none-importance" in their probe field.
+
+  SVG 2 says, in 7 places, that the display value of these elements "must always
+  be set to none by the user agent style sheet, and this declaration must have
+  importance over any other CSS rule or presentation attribute":
+    defs (struct), title + desc (struct), metadata (struct), marker (painting),
+    paint servers = linearGradient, radialGradient, pattern (pservers),
+    script (interact), style (styling).
+
+  If an engine did that literally, a UA rule `E { display: none !important }`
+  would exist, and in the CSS cascade a user agent !important declaration beats
+  an author !important declaration, an inline style and a presentation
+  attribute. So getComputedStyle(E).display would be "none" in every variant.
+
+  What each row measures:
+   - display: getComputedStyle(target).display. This is the observable that
+     tells the spec wording apart from what engines do.
+   - client_rects: target.getClientRects().length. A rough sign that the engine
+     built a box. It is NOT a rendering test: some engines keep an internal
+     object for gradients or markers that may or may not report a rect. Do not
+     read a non-zero count here as "the element is painted".
+
+  Variants per element:
+   - default: no author styling at all.
+   - author_important: page stylesheet `#cN > E { display: inline !important }`.
+   - presentation_attr: display="inline" on the element.
+   - style_attr: style="display: inline" on the element.
+  Spec expectation for every variant: display "none".
+
+  Controls:
+   - ctl_html_title (must be "none"): an HTML title in the body. Shows that a UA
+     display:none rule does show up in getComputedStyle, so an "inline" in a
+     target row is a real measurement.
+   - ctl_g_default (must be "inline"): an SVG g with no styling.
+   - ctl_g_presentation_attr_none (must be "none"): display="none" on g. Shows
+     presentation attributes reach the computed value.
+   - ctl_g_author_important (must be "block"): author !important reaches SVG
+     elements. If a target row returns "inline" for author_important, no UA
+     !important rule is there to beat it.
+   - ctl_rect_box (client_rects must be > 0): positive control for the
+     client_rects measurement.
+   - dup_title_default: same case as title/default, must give the same result.
+
+  All elements are built with innerHTML inside an inline <svg> in this HTML
+  document, so the SVG script element never runs.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 80rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 2px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ .PASS { color: #060; font-weight: 700; }
+ .FAIL { color: #a00; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .6rem; overflow-x: auto; font-size: 11px; }
+ pre.markup { margin: 0; padding: .3rem; white-space: pre-wrap; }
+ h2 { font-size: 15px; margin-top: 1.6rem; }
+ #hosts { position: absolute; left: -10000px; top: 0; }
+</style>
+<style id="author"></style>
+
+<h1>Computed display of SVG elements that SVG 2 says are always display none</h1>
+<p id="status">running…</p>
+<div id="ua"></div>
+<h2>Summary: computed display (spec expects none everywhere)</h2>
+<div id="matrix"></div>
+<h2>Controls</h2>
+<div id="controls"></div>
+<h2>All cases</h2>
+<div id="out"></div>
+<div id="hosts"></div>
+<h2>JSON payload</h2>
+<pre id="json">…</pre>
+
+<script>
+const ELEMENTS = [
+  ['defs', 'struct.html#DefsElement'],
+  ['title', 'struct.html#DescriptionAndTitleElements'],
+  ['desc', 'struct.html#DescriptionAndTitleElements'],
+  ['metadata', 'struct.html#MetadataElement'],
+  ['marker', 'painting.html#MarkerElement'],
+  ['linearGradient', 'pservers.html#LinearGradientElement'],
+  ['radialGradient', 'pservers.html#RadialGradientElement'],
+  ['pattern', 'pservers.html#PatternElement'],
+  ['script', 'interact.html#ScriptElement'],
+  ['style', 'styling.html#StyleElement']
+];
+const VARIANTS = ['default', 'author_important', 'presentation_attr', 'style_attr'];
+
+// Each case: the markup put inside a host div, the CSS added to the page
+// stylesheet, and a selector for the element measured. `id` on the wrapper
+// is cN, a counter, so each case's CSS rule only reaches its own element.
+// The markup and CSS shown in each row are these exact strings.
+let n = 0;
+const CASES = [];
+function svgCase(id, kind, element, variant, inner, css, sel, expect) {
+  const cid = 'c' + (++n);
+  CASES.push({ id, kind, element, variant, cid,
+    markup: `<svg id="${cid}" width="20" height="20">${inner.replace(/CID/g, cid)}</svg>`,
+    css: css.replace(/CID/g, cid), sel: '#' + cid + ' > ' + sel, expect });
+}
+const close = (e) => e === 'script' ? '<\/script>' : `</${e}>`;
+
+for (const [e] of ELEMENTS) {
+  svgCase(`${e}_default`, 'target', e, 'default',
+    `<${e}>${close(e)}`, '', e, { display: 'none' });
+  svgCase(`${e}_author_important`, 'target', e, 'author_important',
+    `<${e}>${close(e)}`, `#CID > ${e} { display: inline !important; }`, e, { display: 'none' });
+  svgCase(`${e}_presentation_attr`, 'target', e, 'presentation_attr',
+    `<${e} display="inline">${close(e)}`, '', e, { display: 'none' });
+  svgCase(`${e}_style_attr`, 'target', e, 'style_attr',
+    `<${e} style="display: inline">${close(e)}`, '', e, { display: 'none' });
+}
+svgCase('dup_title_default', 'dup', 'title', 'default', '<title></title>', '', 'title', { same_as: 'title_default' });
+
+svgCase('ctl_g_default', 'control', 'g', 'default',
+  '<g><rect width="10" height="10"/></g>', '', 'g', { display: 'inline' });
+svgCase('ctl_g_presentation_attr_none', 'control', 'g', 'presentation_attr',
+  '<g display="none"><rect width="10" height="10"/></g>', '', 'g', { display: 'none' });
+svgCase('ctl_g_author_important', 'control', 'g', 'author_important',
+  '<g><rect width="10" height="10"/></g>', '#CID > g { display: block !important; }', 'g', { display: 'block' });
+svgCase('ctl_rect_box', 'control', 'rect', 'default',
+  '<rect width="10" height="10"/>', '', 'rect', { client_rects_gt0: true });
+{
+  const cid = 'c' + (++n);
+  CASES.push({ id: 'ctl_html_title', kind: 'control', element: 'html:title', variant: 'default', cid,
+    markup: `<div id="${cid}"><title></title></div>`, css: '', sel: `#${cid} > title`,
+    expect: { display: 'none' } });
+}
+
+function markupCell(text) {
+  const p = document.createElement('pre'); p.className = 'markup'; p.textContent = text; return p;
+}
+function engineHint(ua) {
+  if (/Ladybird/.test(ua)) return 'ladybird';
+  if (/Servo/.test(ua)) return 'servo';
+  if (/Firefox\//.test(ua)) return 'gecko';
+  if (/Chrome\/|Chromium\//.test(ua)) return 'blink';
+  if (/AppleWebKit/.test(ua)) return 'webkit';
+  return 'unknown';
+}
+const asciiJSON = (o) => JSON.stringify(o, null, 1)
+  .replace(/[\u007f-\uffff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+
+function run() {
+  const hosts = document.getElementById('hosts');
+  document.getElementById('author').textContent = CASES.map(c => c.css).filter(Boolean).join('\n');
+  for (const c of CASES) {
+    const d = document.createElement('div');
+    d.innerHTML = c.markup;
+    hosts.append(d);
+  }
+
+  const results = CASES.map(c => {
+    const t = document.querySelector(c.sel);
+    const r = { id: c.id, kind: c.kind, element: c.element, variant: c.variant };
+    if (!t) { r.error = 'target not found'; return r; }
+    r.namespace = t.namespaceURI;
+    r.display = getComputedStyle(t).display;
+    r.client_rects = t.getClientRects().length;
+    return r;
+  });
+  const byId = Object.fromEntries(results.map(r => [r.id, r]));
+
+  for (const c of CASES) {
+    const r = byId[c.id];
+    if (c.expect.display !== undefined) r.expect_display = c.expect.display;
+    if (c.kind === 'target') r.matches_spec = r.display === 'none';
+    if (c.kind === 'control') {
+      r.pass = c.expect.client_rects_gt0 ? r.client_rects > 0 : r.display === c.expect.display;
+    }
+    if (c.kind === 'dup') {
+      const o = byId[c.expect.same_as];
+      r.pass = r.display === o.display && r.client_rects === o.client_rects;
+    }
+  }
+  const controls = results.filter(r => r.kind === 'control' || r.kind === 'dup');
+  const controls_passed = controls.every(r => r.pass);
+
+  // Summary matrix: element x variant -> computed display.
+  const matrix = {};
+  for (const [e] of ELEMENTS) {
+    matrix[e] = {};
+    for (const v of VARIANTS) matrix[e][v] = byId[`${e}_${v}`].display;
+  }
+
+  const ua = navigator.userAgent;
+  const payload = {
+    probe: 'probe-ua-display-none-importance',
+    user_agent: ua,
+    engine_hint: engineHint(ua),
+    character_set: document.characterSet,
+    controls_passed,
+    spec_expectation: 'display none for every target row, in every variant',
+    targets_matching_spec: results.filter(r => r.kind === 'target' && r.matches_spec).length,
+    targets_total: results.filter(r => r.kind === 'target').length,
+    matrix,
+    cases: results
+  };
+
+  // Render.
+  document.getElementById('ua').textContent = ua;
+
+  const mt = document.createElement('table');
+  mt.insertRow().append(...['element', ...VARIANTS].map(h => Object.assign(document.createElement('th'), { textContent: h })));
+  for (const [e, anchor] of ELEMENTS) {
+    const tr = mt.insertRow();
+    const a = Object.assign(document.createElement('a'), {
+      href: 'https://w3c.github.io/svgwg/svg2-draft/' + anchor, textContent: e });
+    tr.insertCell().append(a);
+    for (const v of VARIANTS) {
+      const td = tr.insertCell();
+      td.textContent = matrix[e][v];
+      td.className = matrix[e][v] === 'none' ? 'PASS' : 'FAIL';
+    }
+  }
+  document.getElementById('matrix').append(mt);
+
+  const table = (rows, cols) => {
+    const t = document.createElement('table');
+    t.insertRow().append(...['id', 'code (markup, then page CSS)', ...cols.map(c => c[0])]
+      .map(h => Object.assign(document.createElement('th'), { textContent: h })));
+    for (const r of rows) {
+      const c = CASES.find(x => x.id === r.id);
+      const tr = t.insertRow();
+      tr.insertCell().textContent = r.id;
+      tr.insertCell().append(markupCell(c.markup + (c.css ? '\n\n' + c.css : '')));
+      for (const [, f] of cols) {
+        const td = tr.insertCell();
+        const v = f(r);
+        td.textContent = String(v);
+        if (v === true) td.className = 'PASS';
+        if (v === false) td.className = 'FAIL';
+      }
+    }
+    return t;
+  };
+  document.getElementById('controls').append(table(controls, [
+    ['display', r => r.display], ['client rects', r => r.client_rects],
+    ['expected', r => r.expect_display ?? (r.kind === 'dup' ? 'same as title_default' : 'client rects > 0')],
+    ['pass', r => r.pass]]));
+  document.getElementById('out').append(table(results.filter(r => r.kind === 'target'), [
+    ['display', r => r.display], ['client rects', r => r.client_rects],
+    ['spec expects', r => r.expect_display], ['matches spec', r => r.matches_spec]]));
+
+  document.getElementById('json').textContent = asciiJSON(payload);
+  const st = document.getElementById('status');
+  st.textContent = 'done. controls ' + (controls_passed ? 'passed' : 'FAILED') + '. ' +
+    payload.targets_matching_spec + ' of ' + payload.targets_total + ' target rows match the spec.';
+  st.className = controls_passed ? 'PASS' : 'FAIL';
+}
+window.addEventListener('load', run);
+</script>
+
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
+</html>
