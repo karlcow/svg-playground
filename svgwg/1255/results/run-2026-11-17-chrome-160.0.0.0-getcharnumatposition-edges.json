@@ -1,0 +1,276 @@
+{
+ "probe": "getcharnumatposition-edges",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/160.0.0.0 Safari/537.36",
+ "engine_hint": "blink",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "ahem_extent_of_A": {
+  "x": 10,
+  "y": 12,
+  "width": 10,
+  "height": 10
+ },
+ "font_error": null,
+ "cases": {
+  "ctl_center_A": {
+   "kind": "control",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(15, 17))",
+   "point": [
+    15,
+    17
+   ],
+   "expect": 0,
+   "note": null,
+   "result": 0,
+   "error": null,
+   "verdict": "PASS"
+  },
+  "ctl_outside": {
+   "kind": "control",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(50, 17))",
+   "point": [
+    50,
+    17
+   ],
+   "expect": -1,
+   "note": null,
+   "result": -1,
+   "error": null,
+   "verdict": "PASS"
+  },
+  "ctl_inside_right": {
+   "kind": "control",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(29.9, 17))",
+   "point": [
+    29.9,
+    17
+   ],
+   "expect": 1,
+   "note": null,
+   "result": 1,
+   "error": null,
+   "verdict": "PASS"
+  },
+  "ctl_past_right": {
+   "kind": "control",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(30.1, 17))",
+   "point": [
+    30.1,
+    17
+   ],
+   "expect": -1,
+   "note": null,
+   "result": -1,
+   "error": null,
+   "verdict": "PASS"
+  },
+  "center_last_B": {
+   "kind": "defined",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(25, 17))",
+   "point": [
+    25,
+    17
+   ],
+   "expect": 1,
+   "note": "SVG 2 as written (\"< last\") would give -1",
+   "result": 1,
+   "error": null,
+   "verdict": "as intended"
+  },
+  "single_char": {
+   "kind": "defined",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">A</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(15, 17))",
+   "point": [
+    15,
+    17
+   ],
+   "expect": 0,
+   "note": "SVG 2 as written: last is 0, the loop never runs, -1",
+   "result": 0,
+   "error": null,
+   "verdict": "as intended"
+  },
+  "edge_left": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(10, 17))",
+   "point": [
+    10,
+    17
+   ],
+   "expect": null,
+   "note": "0 if the left edge counts, else -1",
+   "result": 0,
+   "error": null,
+   "verdict": "report"
+  },
+  "edge_shared": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(20, 17))",
+   "point": [
+    20,
+    17
+   ],
+   "expect": null,
+   "note": "1 if the later match wins or edges are half-open; 0 if the first match wins with closed edges",
+   "result": 1,
+   "error": null,
+   "verdict": "report"
+  },
+  "edge_right": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(30, 17))",
+   "point": [
+    30,
+    17
+   ],
+   "expect": null,
+   "note": "1 if the right edge counts, else -1",
+   "result": 2,
+   "error": null,
+   "verdict": "report"
+  },
+  "edge_top": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(15, 12))",
+   "point": [
+    15,
+    12
+   ],
+   "expect": null,
+   "note": "0 if the top edge counts, else -1",
+   "result": 0,
+   "error": null,
+   "verdict": "report"
+  },
+  "edge_bottom": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(15, 22))",
+   "point": [
+    15,
+    22
+   ],
+   "expect": null,
+   "note": "0 if the bottom edge counts, else -1",
+   "result": 0,
+   "error": null,
+   "verdict": "report"
+  },
+  "overlap_forward": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10 15\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(17, 17))",
+   "point": [
+    17,
+    17
+   ],
+   "expect": null,
+   "note": "A 10..20, B 15..25. Later in logical order: 1. Leftmost first: 0",
+   "result": 0,
+   "error": null,
+   "verdict": "report"
+  },
+  "overlap_backward": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"15 10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition(new DOMPoint(17, 17))",
+   "point": [
+    17,
+    17
+   ],
+   "expect": null,
+   "note": "A 15..25, B 10..20. Later in logical order: 1. Leftmost first: 1. First in logical order: 0",
+   "result": 0,
+   "error": null,
+   "verdict": "report"
+  },
+  "dict_point": {
+   "kind": "defined",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition({ x: 15, y: 17 })",
+   "point": [
+    15,
+    17
+   ],
+   "expect": 0,
+   "note": "the IDL takes DOMPointInit, a plain object works",
+   "result": 0,
+   "error": null,
+   "verdict": "as intended"
+  },
+  "no_argument": {
+   "kind": "defined",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"-5\" y=\"3\">A</text></svg>",
+   "call": "text.getCharNumAtPosition()",
+   "point": [
+    0,
+    0
+   ],
+   "expect": 0,
+   "note": "default {} is the point (0, 0); the cell is -5..5 in x and y",
+   "result": 0,
+   "error": null,
+   "verdict": "as intended"
+  },
+  "nan_x": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition({ x: NaN, y: 17 })",
+   "point": null,
+   "expect": null,
+   "note": "no rule; isPointInFill returns false for NaN, the matching answer here is -1",
+   "result": -1,
+   "error": null,
+   "verdict": "report"
+  },
+  "infinite_x": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition({ x: Infinity, y: 17 })",
+   "point": null,
+   "expect": null,
+   "note": "no rule; isPointInFill returns false for Infinity, the matching answer here is -1",
+   "result": -1,
+   "error": null,
+   "verdict": "report"
+  },
+  "w_not_1": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition({ x: 25, y: 17, w: 1.3 })",
+   "point": [
+    25,
+    17
+   ],
+   "expect": null,
+   "note": "no rule; 1 if w is ignored, 0 if x and y are divided by w (19.2, 13.1)",
+   "result": 1,
+   "error": null,
+   "verdict": "report"
+  },
+  "z_not_0": {
+   "kind": "edge",
+   "markup": "<svg width=\"60\" height=\"40\"><text x=\"10\" y=\"20\">AB</text></svg>",
+   "call": "text.getCharNumAtPosition({ x: 15, y: 17, z: 5 })",
+   "point": [
+    15,
+    17
+   ],
+   "expect": null,
+   "note": "no rule; 0 if z is ignored",
+   "result": 0,
+   "error": null,
+   "verdict": "report"
+  }
+ }
+}
