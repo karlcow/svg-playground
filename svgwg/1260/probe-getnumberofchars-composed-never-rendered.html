@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: getNumberOfChars() with composed characters, in and out of never-rendered elements</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getNumberOfChars">
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/render.html#Rendered-vs-NonRendered">
+<!--
+  Probe for https://github.com/w3c/svgwg/issues/1260 (text inside never-rendered
+  elements) and https://github.com/w3c/svgwg/issues/1261 (the whitespace table).
+
+  SVG 2 getNumberOfChars():
+    "If node is a DOM text node, return the length of the text content of node,
+     after normalizing whitespace ..."  -> DOM string length = UTF-16 code units.
+    "If node is an Element: If the element is not rendered ..., then return 0"
+     -> literal reading: a text element inside defs, symbol, pattern, clipPath,
+        or under a display:none ancestor has 0 characters.
+  getComputedTextLength() is defined from getNumberOfChars(), so 0 there too.
+
+  Each row: one string in one placement. Measured on the text element:
+   - chars: getNumberOfChars()
+   - length: getComputedTextLength(), rounded to 2 decimals
+   - bbox: getBBox().width > 0
+   - units: textContent.length, the UTF-16 count the spec's text-node step gives.
+  Expected values (written before any run):
+   - spec_literal: 0 when the text element is not rendered (display:none on it or
+     an ancestor, or inside defs / symbol / pattern / clipPath), else units.
+   - Earlier runs (2026-11-17, "abc"): all three browsers gave 3 inside defs,
+     symbol, pattern; 0 for display:none on the text.
+
+  Controls:
+   - ctl_abc_doc: "abc" in the document, chars 3 and length > 0.
+   - ctl_abc_none: "abc" with display="none", chars 0 (all engines agreed on 2026-11-17).
+   - ctl_units: textContent.length equals the hand-written UTF-16 count of each
+     string, so the strings reached the page intact (encoding check).
+   - dup_emoji_defs: same case twice, same result.
+
+  Added 2026-11-17 (after Karl's questions):
+   - placement "detached": the text element is built and never inserted. The
+     literal spec says 0 (detached is one of the five "not rendered" cases).
+     Each call is guarded, so a method that throws is recorded, not fatal.
+   - whitespace table, all in the document: getNumberOfChars() step 2 says
+     "after normalizing whitespace according to the value of the white-space
+     property on its parent element", which is not defined anywhere. Each row
+     records textContent.length (units, raw) and the count after CSS Text
+     white-space processing (css: Phase I collapse, Phase II trim at line start
+     and end), which is how SVG's text layout decides addressable characters.
+     ws_across_tspan tells a per-text-node count (4) from a CSS count (3).
+
+  Not measured: whether characters render correctly (glyph coverage depends on
+  installed fonts), accessibility, hit testing.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 90rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 2px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ .PASS { color: #060; font-weight: 700; }
+ .FAIL { color: #a00; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .6rem; overflow-x: auto; font-size: 11px; }
+ pre.markup { margin: 0; padding: .3rem; white-space: pre-wrap; max-width: 36rem; }
+ details { margin-top: .3rem; }
+ h2 { font-size: 15px; margin-top: 1.6rem; }
+ td.live svg { border: 1px dashed #ccc; }
+</style>
+
+<h1>getNumberOfChars() with composed characters, in and out of never-rendered elements</h1>
+<p id="status">running…</p>
+<p id="ua"></p>
+<h2>Summary: getNumberOfChars() per string and placement</h2>
+<div id="matrix"></div>
+<h2>Controls</h2>
+<div id="controls"></div>
+<h2>Whitespace (all in the document)</h2>
+<div id="ws"></div>
+<h2>All composed-character cases</h2>
+<div id="out"></div>
+<h2>JSON payload</h2>
+<pre id="json">…</pre>
+
+<script>
+const SVG_NS = "http://www.w3.org/2000/svg";
+const XML_NS = "http://www.w3.org/XML/1998/namespace";
+const el = (name, attrs = {}, children = []) => {
+  const e = document.createElementNS(SVG_NS, name);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  for (const c of children) e.append(c);
+  return e;
+};
+
+// Strings written with escapes so the source stays ASCII. "units" is the UTF-16
+// count, written by hand, checked against textContent.length (control).
+const STRINGS = [
+  { id: "abc", text: "abc", units: 3, note: "ASCII" },
+  { id: "e_precomposed", text: "\u00e9", units: 1, note: "U+00E9" },
+  { id: "e_combining", text: "e\u0301", units: 2, note: "e + U+0301 combining acute" },
+  { id: "emoji", text: "\u{1F600}", units: 2, note: "U+1F600, one surrogate pair" },
+  { id: "family_zwj", text: "\u{1F468}\u200d\u{1F469}\u200d\u{1F467}", units: 8, note: "man ZWJ woman ZWJ girl" },
+  { id: "flag_jp", text: "\u{1F1EF}\u{1F1F5}", units: 4, note: "regional indicators J P" },
+  { id: "devanagari_raa", text: "\u0930\u093e", units: 2, note: "RA + vowel sign AA" },
+];
+
+const PLACEMENTS = [
+  { id: "doc", rendered: true },
+  { id: "self_none", rendered: false },
+  { id: "defs_used", rendered: false },
+  { id: "defs_unused", rendered: false },
+  { id: "ancestor_none", rendered: false },
+  { id: "clippath_used", rendered: false },
+  { id: "symbol_used", rendered: false },
+  { id: "pattern_used", rendered: false },
+  { id: "detached", rendered: false },
+];
+
+let counter = 0;
+// Builds <svg> with the text element in the given placement. The ids are probe
+// counters; the markup shown beside each row is the serialized live svg (for
+// "detached", the text element itself, which is never inserted).
+function build(str, placement) {
+  const n = ++counter;
+  const text = el("text", { id: "t" + n, x: 5, y: 28, "font-size": 20 }, [document.createTextNode(str.text)]);
+  const svg = el("svg", { width: 180, height: 40 });
+  switch (placement.id) {
+  case "doc": svg.append(text); break;
+  case "self_none": text.setAttribute("display", "none"); svg.append(text); break;
+  case "defs_used": svg.append(el("defs", {}, [text]), el("use", { href: "#t" + n, x: 60 })); break;
+  case "defs_unused": svg.append(el("defs", {}, [text])); break;
+  case "ancestor_none": svg.append(el("g", { display: "none" }, [text])); break;
+  case "clippath_used":
+    svg.append(el("clipPath", { id: "c" + n }, [text]),
+               el("rect", { width: 180, height: 40, fill: "steelblue", "clip-path": "url(#c" + n + ")" }));
+    break;
+  case "symbol_used": svg.append(el("symbol", { id: "s" + n }, [text]), el("use", { href: "#s" + n, x: 60 })); break;
+  case "pattern_used":
+    svg.append(el("pattern", { id: "p" + n, width: 180, height: 40, patternUnits: "userSpaceOnUse" }, [text]),
+               el("rect", { width: 180, height: 40, fill: "url(#p" + n + ")" }));
+    break;
+  case "detached": break;
+  }
+  return { svg, text, shown: placement.id === "detached" ? text : svg };
+}
+
+// Each call is guarded: a detached element may make a method throw.
+function measure(parts) {
+  const { text } = parts;
+  const call = (f) => { try { return f(); } catch (e) { return "error: " + e.name; } };
+  const chars = call(() => text.getNumberOfChars());
+  const length = call(() => Math.round(text.getComputedTextLength() * 100) / 100);
+  const bbox = call(() => text.getBBox().width > 0);
+  return { units: text.textContent.length, chars, length, bbox };
+}
+
+// Whitespace rows, all in the document. "css" is the count after CSS Text
+// white-space processing (Phase I collapse, Phase II trim at line start and end),
+// which decides addressable characters in SVG's text layout algorithm. Written
+// before any run.
+const WS = [
+  { id: "ws_double", note: "two spaces between a and b", build: t => t.append("a  b"), units: 4, css: 3 },
+  { id: "ws_lead_trail", note: "two spaces before and after abc", build: t => t.append("  abc  "), units: 7, css: 3 },
+  { id: "ws_tab_newline", note: "a TAB b LF c", build: t => t.append("a\tb\nc"), units: 5, css: 5 },
+  { id: "ws_only_spaces", note: "three spaces only", build: t => t.append("   "), units: 3, css: 0 },
+  { id: "ws_across_tspan", note: "'a ' then tspan ' b': the two spaces meet across the boundary", build: t => t.append("a ", el("tspan", {}, [document.createTextNode(" b")])), units: 4, css: 3 },
+  { id: "ws_xml_preserve", note: "xml:space=preserve, two spaces", build: t => { t.setAttributeNS(XML_NS, "xml:space", "preserve"); t.append("a  b"); }, units: 4, css: 4 },
+  { id: "ws_pre_spaces", note: "white-space: pre, two spaces", build: t => { t.setAttribute("style", "white-space: pre"); t.append("a  b"); }, units: 4, css: 4 },
+  { id: "ws_pre_newline", note: "white-space: pre, a LF b", build: t => { t.setAttribute("style", "white-space: pre"); t.append("a\nb"); }, units: 3, css: 3 },
+];
+
+function buildWS(c) {
+  const n = ++counter;
+  const text = el("text", { id: "w" + n, x: 5, y: 28, "font-size": 20 });
+  c.build(text);
+  const svg = el("svg", { width: 180, height: 40 }, [text]);
+  return { svg, text, shown: svg };
+}
+
+// Shown markup: tabs, line feeds and spaces inside text made visible, so a reader
+// can tell them apart. The live markup itself is unchanged.
+const visible = (str) => str.replace(/\t/g, "\u21e5").replace(/\n/g, "\u23ce\n").replace(/ /g, "\u2423");
+const pretty = (node, ws) => {
+  let shown = node;
+  if (ws) {
+    // Copy the node and mark whitespace only inside its text nodes, so the
+    // spaces between attributes stay ordinary.
+    shown = node.cloneNode(true);
+    const walker = document.createTreeWalker(shown, NodeFilter.SHOW_TEXT);
+    for (let t = walker.nextNode(); t; t = walker.nextNode())
+      t.data = visible(t.data);
+  }
+  return shown.outerHTML.replace(/></g, ">\n<");
+};
+const markupCell = (t) => { const p = document.createElement("pre"); p.className = "markup"; p.textContent = t; return p; };
+const scriptCell = (fn) => {
+  const d = document.createElement("details");
+  const s = document.createElement("summary"); s.textContent = "script";
+  d.append(s, markupCell(fn.toString()));
+  return d;
+};
+function engineHint(ua) {
+  if (/Ladybird/.test(ua)) return "ladybird";
+  if (/Servo/.test(ua)) return "servo";
+  if (/Firefox\//.test(ua)) return "gecko";
+  if (/Chrome\/|Chromium\//.test(ua)) return "blink";
+  if (/AppleWebKit/.test(ua)) return "webkit";
+  return "unknown";
+}
+const asciiJSON = (o) => JSON.stringify(o, null, 1)
+  .replace(/[\u007f-\uffff]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+const th = (t) => Object.assign(document.createElement("th"), { textContent: t });
+const addCells = (tr, cells) => {
+  for (const [v, ok] of cells) {
+    const td = tr.insertCell(); td.textContent = String(v);
+    if (ok !== undefined) td.className = ok ? "PASS" : "FAIL";
+  }
+};
+
+function run() {
+  // ---- composed characters x placements
+  const rows = [];
+  for (const s of STRINGS)
+    for (const p of PLACEMENTS)
+      rows.push({ id: s.id + "_" + p.id, s, p });
+  rows.push({ id: "dup_emoji_defs_used", s: STRINGS[3], p: PLACEMENTS[2], dup: "emoji_defs_used" });
+
+  // Build all rows into the table first, so every svg is in the document, then measure.
+  const table = document.createElement("table");
+  table.insertRow().append(...["id", "string", "placement", "live", "code", "units", "chars", "length", "bbox width > 0", "spec (literal)"].map(th));
+  const built = rows.map(r => {
+    const parts = build(r.s, r.p);
+    const tr = table.insertRow();
+    tr.insertCell().textContent = r.id;
+    tr.insertCell().textContent = r.s.note;
+    tr.insertCell().textContent = r.p.id;
+    const live = tr.insertCell(); live.className = "live"; live.append(parts.svg);
+    tr.insertCell().append(markupCell(pretty(parts.shown) + (r.p.id === "detached" ? "\n\n(never inserted into the document)" : "")), scriptCell(measure));
+    return { r, parts, tr };
+  });
+  document.getElementById("out").append(table);
+
+  const results = built.map(({ r, parts, tr }) => {
+    const m = measure(parts);
+    const spec = r.p.rendered ? r.s.units : 0;
+    const res = Object.assign({ table: "composed", id: r.id, string: r.s.id, placement: r.p.id, expected_units: r.s.units, spec_literal: spec }, m);
+    res.matches_spec = m.chars === spec;
+    addCells(tr, [[m.units, m.units === r.s.units], [m.chars, res.matches_spec], [m.length], [m.bbox], [spec]]);
+    if (r.dup) res.dup_of = r.dup;
+    return res;
+  });
+
+  // ---- whitespace
+  const wst = document.createElement("table");
+  wst.insertRow().append(...["id", "case", "live", "code", "units (textContent.length)", "chars", "length", "css (collapse + trim)"].map(th));
+  const wsBuilt = WS.map(c => {
+    const parts = buildWS(c);
+    const tr = wst.insertRow();
+    tr.insertCell().textContent = c.id;
+    tr.insertCell().textContent = c.note;
+    const live = tr.insertCell(); live.className = "live"; live.append(parts.svg);
+    tr.insertCell().append(markupCell(pretty(parts.shown, true)), scriptCell(c.build), scriptCell(measure));
+    return { c, parts, tr };
+  });
+  document.getElementById("ws").append(wst);
+  for (const { c, parts, tr } of wsBuilt) {
+    const m = measure(parts);
+    const res = Object.assign({ table: "whitespace", id: c.id, expected_units: c.units, css: c.css }, m);
+    res.matches_css = m.chars === c.css;
+    addCells(tr, [[m.units, m.units === c.units], [m.chars, res.matches_css], [m.length], [c.css]]);
+    results.push(res);
+  }
+
+  const byId = Object.fromEntries(results.map(r => [r.id, r]));
+  const controls = [
+    { id: "ctl_abc_doc", pass: byId.abc_doc.chars === 3 && byId.abc_doc.length > 0, expect: "abc in the document: 3 characters, length > 0" },
+    { id: "ctl_abc_none", pass: byId.abc_self_none.chars === 0, expect: "abc with display=none: 0 characters" },
+    { id: "ctl_units", pass: results.every(r => r.units === r.expected_units), expect: "textContent.length equals the written UTF-16 count for every string and whitespace case (the text reached the DOM intact)" },
+    { id: "dup_emoji_defs", pass: byId.dup_emoji_defs_used.chars === byId.emoji_defs_used.chars && byId.dup_emoji_defs_used.length === byId.emoji_defs_used.length, expect: "same result twice" },
+  ];
+  const controls_passed = controls.every(c => c.pass);
+  const ct = document.createElement("table");
+  ct.insertRow().append(...["control", "expected", "pass"].map(th));
+  for (const c of controls) {
+    const tr = ct.insertRow();
+    tr.insertCell().textContent = c.id; tr.insertCell().textContent = c.expect;
+    addCells(tr, [[c.pass, c.pass]]);
+  }
+  document.getElementById("controls").append(ct);
+
+  // Summary matrix: strings x placements, cell = chars (spec value in brackets when it differs).
+  const mt = document.createElement("table");
+  mt.insertRow().append(...["string (UTF-16 units)", ...PLACEMENTS.map(p => p.id)].map(th));
+  const matrix = {};
+  for (const s of STRINGS) {
+    matrix[s.id] = {};
+    const tr = mt.insertRow();
+    tr.insertCell().textContent = s.note + " (" + s.units + ")";
+    for (const p of PLACEMENTS) {
+      const r = byId[s.id + "_" + p.id];
+      matrix[s.id][p.id] = r.chars;
+      const td = tr.insertCell();
+      td.textContent = r.chars + (r.matches_spec ? "" : " [spec " + r.spec_literal + "]");
+      td.className = r.matches_spec ? "PASS" : "FAIL";
+    }
+  }
+  document.getElementById("matrix").append(mt);
+
+  const ua = navigator.userAgent;
+  const payload = {
+    probe: "probe-getnumberofchars-composed-never-rendered",
+    user_agent: ua,
+    engine_hint: engineHint(ua),
+    character_set: document.characterSet,
+    controls_passed,
+    controls,
+    matrix,
+    whitespace: Object.fromEntries(WS.map(c => [c.id, byId[c.id].chars])),
+    cases: results,
+  };
+  document.getElementById("ua").textContent = ua;
+  document.getElementById("json").textContent = asciiJSON(payload);
+  const st = document.getElementById("status");
+  st.textContent = "done. controls " + (controls_passed ? "passed" : "FAILED") + ".";
+  st.className = controls_passed ? "PASS" : "FAIL";
+}
+window.addEventListener("load", run);
+</script>
+
+
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
+</html>
