@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: getRotationOfChar(), glyph rotation or advance direction</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextContentElement__getRotationOfChar">
+<!--
+  Probe for https://github.com/w3c/svgwg/issues/1258 (also https://github.com/w3c/svgwg/issues/537, case emoji_then_x)
+
+  SVG 2: "Let direction be the angle in degrees that represents the direction of the
+  cluster's advance. This direction takes into account the writing mode being used, the
+  direction of the character, the text-orientation, glyph-orientation-horizontal and
+  glyph-orientation-vertical properties, any 'rotate' value that applies to cluster, and
+  any rotation applied to due a 'textPath'."
+  SVG 1.1: "the rotation value relative to the current user coordinate system used to
+  render the glyph(s)", "supplemental to any rotation due to properties
+  glyph-orientation-horizontal and glyph-orientation-vertical".
+
+  Three readings, written before any run for each case:
+  - glyph: how much the glyph is turned (what upstream WPT getrotationofchar.html expects);
+  - advance: the direction the pen moves after the glyph (SVG 2 read literally);
+  - svg11: the glyph's turn, minus what glyph-orientation-* or vertical text adds.
+  Angles are normalised to 0..360.
+
+  Controls (must hold, every reading agrees): horizontal "A" is 0, rotate="30" is 30.
+  Rotation does not depend on font metrics, so system fonts are used.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 90rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ .PASS { color: #060; font-weight: 700; } .FAIL { color: #a00; font-weight: 700; } .INFO { color: #036; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .4rem; margin: 0; font-size: 11px; white-space: pre-wrap; }
+ #banner { display: none; padding: .6rem; font-weight: 700; }
+ #banner.bad { display: block; background: #fdd; color: #a00; border: 2px solid #a00; }
+ svg { background: #fafafa; }
+ text { font-size: 24px; }
+</style>
+<h1>getRotationOfChar(): glyph rotation or advance direction</h1>
+<div id="banner"></div>
+<p id="status">running...</p>
+<table id="cases"><thead><tr><th>id</th><th>markup</th><th>rendered</th><th>getRotationOfChar(index)</th><th>glyph</th><th>advance</th><th>svg11</th><th>matches</th></tr></thead><tbody></tbody></table>
+<h2>JSON payload</h2>
+<pre id="json">…</pre>
+<script>
+const H = (body) => `<svg width="120" height="60">${body}</svg>`;
+const V = (body) => `<svg width="60" height="120">${body}</svg>`;
+const CASES = [
+  { id: 'ctl_horizontal',  markup: H(`<text x="10" y="40">A</text>`), glyph: 0, advance: 0, svg11: 0, control: true },
+  { id: 'ctl_rotate',      markup: H(`<text x="10" y="40" rotate="30">A</text>`), glyph: 30, advance: 30, svg11: 30, control: true },
+  { id: 'rtl_hebrew',      markup: H(`<text x="100" y="40" direction="rtl">&#x05E9;</text>`), glyph: 0, advance: 180, svg11: 0 },
+  { id: 'rtl_override_latin', markup: H(`<text x="100" y="40" direction="rtl" unicode-bidi="bidi-override">A</text>`), glyph: 0, advance: 180, svg11: 0 },
+  { id: 'rtl_rotate',      markup: H(`<text x="100" y="40" direction="rtl" rotate="30">&#x05E9;</text>`), glyph: 30, advance: 210, svg11: 30 },
+  { id: 'vertical_upright_cjk', markup: V(`<text x="30" y="10" style="writing-mode: vertical-rl">&#x6708;</text>`), glyph: 0, advance: 90, svg11: 0 },
+  { id: 'vertical_sideways_latin', markup: V(`<text x="30" y="10" style="writing-mode: vertical-rl">M</text>`), glyph: 90, advance: 90, svg11: 0 },
+  { id: 'vertical_text_orientation_upright', markup: V(`<text x="30" y="10" style="writing-mode: vertical-rl; text-orientation: upright">M</text>`), glyph: 0, advance: 90, svg11: 0 },
+  { id: 'vertical_gov_0deg_latin', markup: V(`<text x="30" y="10" style="writing-mode: vertical-rl" glyph-orientation-vertical="0deg">M</text>`), glyph: 0, advance: 90, svg11: 0 },
+  { id: 'vertical_gov_90deg_cjk', markup: V(`<text x="30" y="10" style="writing-mode: vertical-rl" glyph-orientation-vertical="90deg">&#x6708;</text>`), glyph: 90, advance: 90, svg11: 0 },
+  // Composed characters. SVG 2: "If a typographic character corresponds to more than one
+  // character (e.g. a ligature), only the array values corresponding to the first character
+  // are used ... Array values corresponding to other characters in the typographic character
+  // are skipped (for 'rotate' ...)". So every index of a cluster reports the cluster's rotation.
+  { id: 'composed_mark_index1', markup: H(`<text x="10" y="40" rotate="0 45 10">E&#x0301;X</text>`), index: 1, glyph: 0, advance: 0, svg11: 0, note: 'U+0301 belongs to E: 0. 45 if the mark were rotated on its own' },
+  { id: 'composed_after_mark', markup: H(`<text x="10" y="40" rotate="0 45 10">E&#x0301;X</text>`), index: 2, glyph: 10, advance: 10, svg11: 10, note: 'X uses rotate[2]: 10. 45 if values were taken per cluster, not per index' },
+  { id: 'composed_vertical_mark', markup: V(`<text x="30" y="10" style="writing-mode: vertical-rl">E&#x0301;</text>`), index: 1, glyph: 90, advance: 90, svg11: 0, note: 'the mark follows its sideways E' },
+  { id: 'composed_rtl_niqqud', markup: H(`<text x="100" y="40" direction="rtl" rotate="0 45">&#x05E9;&#x05B8;</text>`), index: 1, glyph: 0, advance: 180, svg11: 0, note: 'U+05B8 belongs to U+05E9' },
+  { id: 'composed_devanagari', markup: H(`<text x="10" y="40" rotate="0 45">&#x0930;&#x093E;</text>`), index: 1, glyph: 0, advance: 0, svg11: 0, note: 'vowel sign AA belongs to RA' },
+  { id: 'emoji_low_surrogate', markup: H(`<text x="10" y="40" rotate="20 45 10">&#x1F600;X</text>`), index: 1, glyph: 20, advance: 20, svg11: 20, note: 'second UTF-16 code unit of the emoji: the emoji rotation, 20' },
+  { id: 'emoji_then_x', markup: H(`<text x="10" y="40" rotate="20 45 10">&#x1F600;X</text>`), index: 2, glyph: 45, advance: 45, svg11: 45, note: 'X is code unit 2 for the DOM method. rotate is indexed by code points (TermAddressableCharacter, since svgwg#556): X is the second character, 45. 10 if rotate is indexed by code units (svgwg#537)' },
+  { id: 'textpath_leftward', markup: H(`<path id="left" d="M 110 40 L 10 40" fill="none" stroke="lightblue"/><text><textPath href="#left">A</textPath></text>`), glyph: 180, advance: 180, svg11: 180 },
+];
+
+const norm = (a) => { const r = Math.round((((a % 360) + 360) % 360) * 1000) / 1000; return r === 360 ? 0 : r; };
+const asciiJSON = (o) => JSON.stringify(o, null, 1)
+  .replace(/[\u007f-\uffff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+const engineHint = () => /Firefox\//.test(navigator.userAgent) ? 'gecko'
+  : /(Chrome|Chromium|Edg)\//.test(navigator.userAgent) ? 'blink'
+  : /AppleWebKit/.test(navigator.userAgent) ? 'webkit' : 'unknown';
+
+const results = {};
+let controlsPassed = true;
+const tbody = document.querySelector('#cases tbody');
+for (const c of CASES) {
+  const tr = document.createElement('tr');
+  tbody.appendChild(tr);
+  const live = document.createElement('td');
+  live.innerHTML = c.markup; // in the document before measuring
+  const cell = (text, asPre, cls) => { const td = document.createElement('td'); if (asPre) { const p = document.createElement('pre'); p.textContent = text; td.appendChild(p); } else td.textContent = text; if (cls) td.className = cls; return td; };
+  tr.append(cell(c.id), cell(c.markup + (c.note ? '\n\n' + c.note : ''), true), live);
+  let value = null, error = null;
+  try { value = norm(live.querySelector('text').getRotationOfChar(c.index || 0)); } catch (e) { error = e.name; }
+  const matches = ['glyph', 'advance', 'svg11'].filter(k => value === c[k]);
+  let verdict = matches.length ? matches.join(', ') : 'none';
+  if (c.control) { verdict = value === c.glyph ? 'PASS' : 'FAIL'; if (verdict === 'FAIL') controlsPassed = false; }
+  results[c.id] = { markup: c.markup, index: c.index || 0, note: c.note || null, result: value, error, expected: { glyph: c.glyph, advance: c.advance, svg11: c.svg11 }, matches, control: !!c.control };
+  tr.append(cell(`index ${c.index || 0}: ` + (error ? 'threw ' + error : String(value))), cell(String(c.glyph)), cell(String(c.advance)), cell(String(c.svg11)), cell(verdict, false, c.control ? verdict : 'INFO'));
+}
+if (!controlsPassed) { const b = document.getElementById('banner'); b.className = 'bad'; b.textContent = 'A control failed: the other rows cannot be trusted in this browser.'; }
+document.getElementById('json').textContent = asciiJSON({
+  probe: 'getrotationofchar-readings', user_agent: navigator.userAgent, engine_hint: engineHint(),
+  character_set: document.characterSet, controls_passed: controlsPassed, cases: results });
+document.getElementById('status').textContent = controlsPassed ? 'done' : 'done, but see the red banner';
+</script>
+
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
+
+</html>

@@ -1,0 +1,317 @@
+{
+ "probe": "getrotationofchar-readings",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/160.0.0.0 Safari/537.36",
+ "engine_hint": "blink",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "cases": {
+  "ctl_horizontal": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"10\" y=\"40\">A</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 0,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "advance",
+    "svg11"
+   ],
+   "control": true
+  },
+  "ctl_rotate": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"10\" y=\"40\" rotate=\"30\">A</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 30,
+   "error": null,
+   "expected": {
+    "glyph": 30,
+    "advance": 30,
+    "svg11": 30
+   },
+   "matches": [
+    "glyph",
+    "advance",
+    "svg11"
+   ],
+   "control": true
+  },
+  "rtl_hebrew": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"100\" y=\"40\" direction=\"rtl\">&#x05E9;</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 180,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "svg11"
+   ],
+   "control": false
+  },
+  "rtl_override_latin": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"100\" y=\"40\" direction=\"rtl\" unicode-bidi=\"bidi-override\">A</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 180,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "svg11"
+   ],
+   "control": false
+  },
+  "rtl_rotate": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"100\" y=\"40\" direction=\"rtl\" rotate=\"30\">&#x05E9;</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 30,
+   "error": null,
+   "expected": {
+    "glyph": 30,
+    "advance": 210,
+    "svg11": 30
+   },
+   "matches": [
+    "glyph",
+    "svg11"
+   ],
+   "control": false
+  },
+  "vertical_upright_cjk": {
+   "markup": "<svg width=\"60\" height=\"120\"><text x=\"30\" y=\"10\" style=\"writing-mode: vertical-rl\">&#x6708;</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 90,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "svg11"
+   ],
+   "control": false
+  },
+  "vertical_sideways_latin": {
+   "markup": "<svg width=\"60\" height=\"120\"><text x=\"30\" y=\"10\" style=\"writing-mode: vertical-rl\">M</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 90,
+   "error": null,
+   "expected": {
+    "glyph": 90,
+    "advance": 90,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "advance"
+   ],
+   "control": false
+  },
+  "vertical_text_orientation_upright": {
+   "markup": "<svg width=\"60\" height=\"120\"><text x=\"30\" y=\"10\" style=\"writing-mode: vertical-rl; text-orientation: upright\">M</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 90,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "svg11"
+   ],
+   "control": false
+  },
+  "vertical_gov_0deg_latin": {
+   "markup": "<svg width=\"60\" height=\"120\"><text x=\"30\" y=\"10\" style=\"writing-mode: vertical-rl\" glyph-orientation-vertical=\"0deg\">M</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 90,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 90,
+    "svg11": 0
+   },
+   "matches": [
+    "advance"
+   ],
+   "control": false
+  },
+  "vertical_gov_90deg_cjk": {
+   "markup": "<svg width=\"60\" height=\"120\"><text x=\"30\" y=\"10\" style=\"writing-mode: vertical-rl\" glyph-orientation-vertical=\"90deg\">&#x6708;</text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 90,
+    "advance": 90,
+    "svg11": 0
+   },
+   "matches": [
+    "svg11"
+   ],
+   "control": false
+  },
+  "composed_mark_index1": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"10\" y=\"40\" rotate=\"0 45 10\">E&#x0301;X</text></svg>",
+   "index": 1,
+   "note": "U+0301 belongs to E: 0. 45 if the mark were rotated on its own",
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 0,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "advance",
+    "svg11"
+   ],
+   "control": false
+  },
+  "composed_after_mark": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"10\" y=\"40\" rotate=\"0 45 10\">E&#x0301;X</text></svg>",
+   "index": 2,
+   "note": "X uses rotate[2]: 10. 45 if values were taken per cluster, not per index",
+   "result": 10,
+   "error": null,
+   "expected": {
+    "glyph": 10,
+    "advance": 10,
+    "svg11": 10
+   },
+   "matches": [
+    "glyph",
+    "advance",
+    "svg11"
+   ],
+   "control": false
+  },
+  "composed_vertical_mark": {
+   "markup": "<svg width=\"60\" height=\"120\"><text x=\"30\" y=\"10\" style=\"writing-mode: vertical-rl\">E&#x0301;</text></svg>",
+   "index": 1,
+   "note": "the mark follows its sideways E",
+   "result": 90,
+   "error": null,
+   "expected": {
+    "glyph": 90,
+    "advance": 90,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "advance"
+   ],
+   "control": false
+  },
+  "composed_rtl_niqqud": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"100\" y=\"40\" direction=\"rtl\" rotate=\"0 45\">&#x05E9;&#x05B8;</text></svg>",
+   "index": 1,
+   "note": "U+05B8 belongs to U+05E9",
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 180,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "svg11"
+   ],
+   "control": false
+  },
+  "composed_devanagari": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"10\" y=\"40\" rotate=\"0 45\">&#x0930;&#x093E;</text></svg>",
+   "index": 1,
+   "note": "vowel sign AA belongs to RA",
+   "result": 0,
+   "error": null,
+   "expected": {
+    "glyph": 0,
+    "advance": 0,
+    "svg11": 0
+   },
+   "matches": [
+    "glyph",
+    "advance",
+    "svg11"
+   ],
+   "control": false
+  },
+  "emoji_low_surrogate": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"10\" y=\"40\" rotate=\"20 45 10\">&#x1F600;X</text></svg>",
+   "index": 1,
+   "note": "second UTF-16 code unit of the emoji: the emoji rotation, 20",
+   "result": 20,
+   "error": null,
+   "expected": {
+    "glyph": 20,
+    "advance": 20,
+    "svg11": 20
+   },
+   "matches": [
+    "glyph",
+    "advance",
+    "svg11"
+   ],
+   "control": false
+  },
+  "emoji_then_x": {
+   "markup": "<svg width=\"120\" height=\"60\"><text x=\"10\" y=\"40\" rotate=\"20 45 10\">&#x1F600;X</text></svg>",
+   "index": 2,
+   "note": "X is code unit 2: 10 if rotate is indexed by code units, 45 if by code points (svgwg#537)",
+   "result": 45,
+   "error": null,
+   "expected": {
+    "glyph": 10,
+    "advance": 10,
+    "svg11": 10
+   },
+   "matches": [],
+   "control": false
+  },
+  "textpath_leftward": {
+   "markup": "<svg width=\"120\" height=\"60\"><path id=\"left\" d=\"M 110 40 L 10 40\" fill=\"none\" stroke=\"lightblue\"/><text><textPath href=\"#left\">A</textPath></text></svg>",
+   "index": 0,
+   "note": null,
+   "result": 180,
+   "error": null,
+   "expected": {
+    "glyph": 180,
+    "advance": 180,
+    "svg11": 180
+   },
+   "matches": [
+    "glyph",
+    "advance",
+    "svg11"
+   ],
+   "control": false
+  }
+ }
+}
