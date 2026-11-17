@@ -20,6 +20,9 @@
   Subject check: getExtentOfChar(0) on "abcd" is 10 x 10.
   Controls (must hold): getSubStringLength(0, 4) is 40, getSubStringLength(1, 1) is 10,
   getComputedTextLength() is 40.
+  Cases emoji_*: <text>a&#x1F600;b</text>, to tell UTF-16 code units (the interface intro)
+  from code points (the glossary's "character"). They use only values that do not depend on
+  the emoji's width, which comes from a fallback font.
   Expected values below were written before any run: "expect" follows the IDL
   conversion and the engines' source (cut nchars at the end, throw only for charnum).
 -->
@@ -45,6 +48,8 @@
 <script>
 const ABCD = `<svg width="80" height="30"><text x="10" y="20">abcd</text></svg>`;
 const EMPTY = `<svg width="80" height="30"><text x="10" y="20"></text></svg>`;
+// a, U+1F600 (two UTF-16 code units, drawn by a fallback font), b.
+const EMOJI = `<svg width="80" height="30"><text x="10" y="20">a&#x1F600;b</text></svg>`;
 // kind: 'control' must equal expect; 'case' is compared with expect and with the
 // literal SVG 2 reading (spec2) and reported.
 const CASES = [
@@ -61,6 +66,14 @@ const CASES = [
   { id: 'charnum_minus1',     markup: ABCD,  call: t => t.getSubStringLength(-1, 1), expect: 'IndexSizeError', spec2: 'IndexSizeError (charnum is 4294967295)', kind: 'case' },
   { id: 'empty_text',         markup: EMPTY, call: t => t.getSubStringLength(0, 0), expect: 'IndexSizeError', spec2: 'undefined: there is no highest index', kind: 'case' },
   { id: 'empty_computed',     markup: EMPTY, call: t => t.getComputedTextLength(), expect: 0, spec2: '0 (getSubStringLength(0, count) with count 0)', kind: 'case' },
+  // Indexes are UTF-16 code units (interface intro). "expect" is the code-unit answer,
+  // "spec2" the code-point answer (glossary: "Essentially, a Unicode code point").
+  { id: 'emoji_count',        markup: EMOJI, call: t => t.getNumberOfChars(), expect: 4, spec2: 'code points: 3', kind: 'case' },
+  { id: 'emoji_a',            markup: EMOJI, call: t => t.getSubStringLength(0, 1), expect: 10, spec2: 'code points: 10', kind: 'case' },
+  { id: 'emoji_index2',       markup: EMOJI, call: t => t.getSubStringLength(2, 1), expect: 0, spec2: 'code points: 10 (index 2 is b)', kind: 'case' },
+  { id: 'emoji_index3',       markup: EMOJI, call: t => t.getSubStringLength(3, 1), expect: 10, spec2: 'code points: IndexSizeError (3 is past the end)', kind: 'case' },
+  { id: 'emoji_start2_x',     markup: EMOJI, call: t => t.getStartPositionOfChar(2).x, expect: 20, spec2: 'code points: the start of b, 20 + the emoji width', kind: 'case' },
+  { id: 'emoji_halves',       markup: EMOJI, call: t => t.getSubStringLength(1, 1) === t.getSubStringLength(1, 2), expect: true, spec2: 'code points: false (1, 2 is the emoji plus b)', kind: 'case', note: 'the first code unit carries the whole emoji' },
 ];
 
 const r3 = (x) => typeof x === 'number' ? Math.round(x * 1000) / 1000 : x;

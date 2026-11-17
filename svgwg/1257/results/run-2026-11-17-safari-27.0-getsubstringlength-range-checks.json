@@ -141,6 +141,66 @@
    "result": 0,
    "error": null,
    "verdict": "as expected"
+  },
+  "emoji_count": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getNumberOfChars()",
+   "expect": 4,
+   "spec2_literal": "code points: 3",
+   "result": 4,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_a": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getSubStringLength(0, 1)",
+   "expect": 10,
+   "spec2_literal": "code points: 10",
+   "result": 10,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_index2": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getSubStringLength(2, 1)",
+   "expect": 0,
+   "spec2_literal": "code points: 10 (index 2 is b)",
+   "result": 13,
+   "error": null,
+   "verdict": "differs"
+  },
+  "emoji_index3": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getSubStringLength(3, 1)",
+   "expect": 10,
+   "spec2_literal": "code points: IndexSizeError (3 is past the end)",
+   "result": 10,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_start2_x": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getStartPositionOfChar(2).x",
+   "expect": 20,
+   "spec2_literal": "code points: the start of b, 20 + the emoji width",
+   "result": 20,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_halves": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getSubStringLength(1, 1) === t.getSubStringLength(1, 2)",
+   "expect": true,
+   "spec2_literal": "code points: false (1, 2 is the emoji plus b)",
+   "result": true,
+   "error": null,
+   "verdict": "as expected"
   }
  }
 }

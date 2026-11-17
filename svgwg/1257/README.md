@@ -9,7 +9,7 @@ SVG 2 says "If charnum is greater than the highest index assigned to a character
 
 | page | what it asks |
 |---|---|
-| [probe-getsubstringlength-range-checks.html](probe-getsubstringlength-range-checks.html) | 10 calls to `getSubStringLength()` and `getComputedTextLength()` on `<text>abcd</text>` and on an empty `<text>`: nchars -1, 4294967295, past the end and 0; charnum at the last character, at the count and -1. |
+| [probe-getsubstringlength-range-checks.html](probe-getsubstringlength-range-checks.html) | 10 calls to `getSubStringLength()` and `getComputedTextLength()` on `<text>abcd</text>` and on an empty `<text>`: nchars -1, 4294967295, past the end and 0; charnum at the last character, at the count and -1. Then 6 calls on `<text>a&#x1F600;b</text>` to tell UTF-16 code units from code points, using only values that do not depend on the emoji's width. |
 
 Ahem is embedded in the page and loaded from its bytes, so every character is 10 long. Checks: the extent of `a` is 10 x 10; controls `getSubStringLength(0, 4)` is 40, `getSubStringLength(1, 1)` is 10 and `getComputedTextLength()` is 40.
 
@@ -29,3 +29,15 @@ From the files in [results/](results/). All on 2026-11-17. All controls passed. 
 | `getSubStringLength(-1, 1)` (charnum is 4294967295) | IndexSizeError |
 | empty `<text>`: `getSubStringLength(0, 0)` | IndexSizeError |
 | empty `<text>`: `getComputedTextLength()` | 0 |
+
+On `<text>a&#x1F600;b</text>` (the emoji is two UTF-16 code units, drawn by a fallback font):
+
+| call | Safari 27.0 | Firefox 162 | Chrome 160 |
+|---|---|---|---|
+| `getNumberOfChars()` | 4 | 4 | 4 |
+| `getSubStringLength(3, 1)` (b) | 10 | 10 | 10 |
+| `getStartPositionOfChar(2).x` | 20 | 20 | 20 |
+| `getSubStringLength(1, 1)` equals `getSubStringLength(1, 2)` | yes | yes | yes |
+| `getSubStringLength(2, 1)` (second half of the emoji) | **13** | **0** | **13** |
+
+All three count UTF-16 code units, as the interface section says. A range that starts on the second half of the emoji gives 0 in Firefox, as SVG 2 says (the advance goes to "the first character in document order to correspond to that typographic character"), and the whole emoji in Safari and Chrome, as SVG 1.1 said ("the measured range shall be expanded so that each of the inseparable characters are included").
