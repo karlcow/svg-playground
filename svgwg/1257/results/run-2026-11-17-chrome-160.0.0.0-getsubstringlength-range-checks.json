@@ -1,0 +1,206 @@
+{
+ "probe": "getsubstringlength-range-checks",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/160.0.0.0 Safari/537.36",
+ "engine_hint": "blink",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "font_error": null,
+ "ahem_extent_of_a": {
+  "x": 10,
+  "y": 12,
+  "width": 10,
+  "height": 10
+ },
+ "cases": {
+  "ctl_whole": {
+   "kind": "control",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(0, 4)",
+   "expect": 40,
+   "spec2_literal": null,
+   "result": 40,
+   "error": null,
+   "verdict": "PASS"
+  },
+  "ctl_one": {
+   "kind": "control",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(1, 1)",
+   "expect": 10,
+   "spec2_literal": null,
+   "result": 10,
+   "error": null,
+   "verdict": "PASS"
+  },
+  "ctl_computed": {
+   "kind": "control",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getComputedTextLength()",
+   "expect": 40,
+   "spec2_literal": null,
+   "result": 40,
+   "error": null,
+   "verdict": "PASS"
+  },
+  "nchars_minus1": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(1, -1)",
+   "expect": 30,
+   "spec2_literal": "30 (nchars is 4294967295, the \"negative\" check cannot apply)",
+   "result": 30,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "nchars_2pow32_minus1": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(1, 4294967295)",
+   "expect": 30,
+   "spec2_literal": "30",
+   "result": 30,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "nchars_past_end": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(1, 100)",
+   "expect": 30,
+   "spec2_literal": "30",
+   "result": 30,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "nchars_minus1_last": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(3, -1)",
+   "expect": 10,
+   "spec2_literal": "10",
+   "result": 10,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "nchars_zero": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(2, 0)",
+   "expect": 0,
+   "spec2_literal": "0",
+   "result": 0,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "charnum_last": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(3, 1)",
+   "expect": 10,
+   "spec2_literal": "10",
+   "result": 10,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "charnum_count": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(4, 0)",
+   "expect": "IndexSizeError",
+   "spec2_literal": "IndexSizeError (4 is greater than the highest index, 3)",
+   "result": null,
+   "error": "IndexSizeError",
+   "verdict": "as expected"
+  },
+  "charnum_minus1": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">abcd</text></svg>",
+   "call": "text.getSubStringLength(-1, 1)",
+   "expect": "IndexSizeError",
+   "spec2_literal": "IndexSizeError (charnum is 4294967295)",
+   "result": null,
+   "error": "IndexSizeError",
+   "verdict": "as expected"
+  },
+  "empty_text": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\"></text></svg>",
+   "call": "text.getSubStringLength(0, 0)",
+   "expect": "IndexSizeError",
+   "spec2_literal": "undefined: there is no highest index",
+   "result": null,
+   "error": "IndexSizeError",
+   "verdict": "as expected"
+  },
+  "empty_computed": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\"></text></svg>",
+   "call": "text.getComputedTextLength()",
+   "expect": 0,
+   "spec2_literal": "0 (getSubStringLength(0, count) with count 0)",
+   "result": 0,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_count": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getNumberOfChars()",
+   "expect": 4,
+   "spec2_literal": "code points: 3",
+   "result": 4,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_a": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getSubStringLength(0, 1)",
+   "expect": 10,
+   "spec2_literal": "code points: 10",
+   "result": 10,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_index2": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getSubStringLength(2, 1)",
+   "expect": 0,
+   "spec2_literal": "code points: 10 (index 2 is b)",
+   "result": 13,
+   "error": null,
+   "verdict": "differs"
+  },
+  "emoji_index3": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getSubStringLength(3, 1)",
+   "expect": 10,
+   "spec2_literal": "code points: IndexSizeError (3 is past the end)",
+   "result": 10,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_start2_x": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getStartPositionOfChar(2).x",
+   "expect": 20,
+   "spec2_literal": "code points: the start of b, 20 + the emoji width",
+   "result": 20,
+   "error": null,
+   "verdict": "as expected"
+  },
+  "emoji_halves": {
+   "kind": "case",
+   "markup": "<svg width=\"80\" height=\"30\"><text x=\"10\" y=\"20\">a&#x1F600;b</text></svg>",
+   "call": "text.getSubStringLength(1, 1) === t.getSubStringLength(1, 2)",
+   "expect": true,
+   "spec2_literal": "code points: false (1, 2 is the emoji plus b)",
+   "result": true,
+   "error": null,
+   "verdict": "as expected"
+  }
+ }
+}
