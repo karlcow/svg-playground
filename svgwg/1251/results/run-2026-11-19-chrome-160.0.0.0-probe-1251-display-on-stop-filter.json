@@ -1,0 +1,278 @@
+{
+ "probe": "probe-1251-display-on-stop-filter",
+ "issue": "https://github.com/w3c/svgwg/issues/1251",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/160.0.0.0 Safari/537.36",
+ "engine_hint": "blink",
+ "character_set": "UTF-8",
+ "controls": {
+  "determinism": true,
+  "stop_lime": true,
+  "stop_blue_differs": true,
+  "blank_detectable": true,
+  "filter_works": true,
+  "filter_absent_red": true
+ },
+ "controls_passed": true,
+ "spec_expectation": "if stop and filter are never-rendered elements, display: none has no effect on them: every target is lime",
+ "source_prediction": "stop targets: lime in WebKit and Blink, dropped in Gecko (transparent, or blue for stop_only_none_then_blue); filter targets lime everywhere",
+ "targets": [
+  {
+   "id": "stop_style_none",
+   "colour": "lime",
+   "matches": true
+  },
+  {
+   "id": "stop_attr_none",
+   "colour": "lime",
+   "matches": true
+  },
+  {
+   "id": "stop_only_none_then_blue",
+   "colour": "lime",
+   "matches": true
+  },
+  {
+   "id": "filter_style_none",
+   "colour": "transparent",
+   "matches": false
+  },
+  {
+   "id": "filter_ancestor_none",
+   "colour": "lime",
+   "matches": true
+  }
+ ],
+ "cases": [
+  {
+   "id": "stop_ctl_lime",
+   "role": "control",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    255,
+    0,
+    255
+   ],
+   "colour": "lime",
+   "expect_if_never_rendered": "lime",
+   "matches": true,
+   "hash": "3f21d01d",
+   "alpha_nonzero": 10000,
+   "error": null
+  },
+  {
+   "id": "stop_ctl_lime_repeat",
+   "role": "control: same as stop_ctl_lime",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    255,
+    0,
+    255
+   ],
+   "colour": "lime",
+   "expect_if_never_rendered": "lime",
+   "matches": true,
+   "hash": "3f21d01d",
+   "alpha_nonzero": 10000,
+   "error": null
+  },
+  {
+   "id": "stop_ctl_blue",
+   "role": "control: must differ from lime",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    0,
+    255,
+    255
+   ],
+   "colour": "blue",
+   "expect_if_never_rendered": "blue",
+   "matches": true,
+   "hash": "58db5be0",
+   "alpha_nonzero": 10000,
+   "error": null
+  },
+  {
+   "id": "stop_ctl_nostops",
+   "role": "control: blank (no stops paints nothing)",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "colour": "transparent",
+   "expect_if_never_rendered": "transparent",
+   "matches": true,
+   "hash": "0cec4260",
+   "alpha_nonzero": 0,
+   "error": null
+  },
+  {
+   "id": "stop_style_none",
+   "role": "target",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    255,
+    0,
+    255
+   ],
+   "colour": "lime",
+   "expect_if_never_rendered": "lime",
+   "matches": true,
+   "hash": "3f21d01d",
+   "alpha_nonzero": 10000,
+   "error": null
+  },
+  {
+   "id": "stop_attr_none",
+   "role": "target",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    255,
+    0,
+    255
+   ],
+   "colour": "lime",
+   "expect_if_never_rendered": "lime",
+   "matches": true,
+   "hash": "3f21d01d",
+   "alpha_nonzero": 10000,
+   "error": null
+  },
+  {
+   "id": "stop_only_none_then_blue",
+   "role": "target (dropping gives solid blue)",
+   "fragment": null,
+   "pixel_at": [
+    2,
+    50
+   ],
+   "pixel": [
+    0,
+    255,
+    0,
+    255
+   ],
+   "colour": "lime",
+   "expect_if_never_rendered": "lime",
+   "matches": true,
+   "hash": "c04db928",
+   "alpha_nonzero": 10000,
+   "error": null
+  },
+  {
+   "id": "filter_ctl",
+   "role": "control",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    255,
+    0,
+    255
+   ],
+   "colour": "lime",
+   "expect_if_never_rendered": "lime",
+   "matches": true,
+   "hash": "3f21d01d",
+   "alpha_nonzero": 10000,
+   "error": null
+  },
+  {
+   "id": "filter_ctl_nofilter",
+   "role": "control: must differ from lime",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    255,
+    0,
+    0,
+    255
+   ],
+   "colour": "red",
+   "expect_if_never_rendered": "red",
+   "matches": true,
+   "hash": "fc6ad1d4",
+   "alpha_nonzero": 10000,
+   "error": null
+  },
+  {
+   "id": "filter_style_none",
+   "role": "target",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "colour": "transparent",
+   "expect_if_never_rendered": "lime",
+   "matches": false,
+   "hash": "0cec4260",
+   "alpha_nonzero": 0,
+   "error": null
+  },
+  {
+   "id": "filter_ancestor_none",
+   "role": "target",
+   "fragment": null,
+   "pixel_at": [
+    50,
+    50
+   ],
+   "pixel": [
+    0,
+    255,
+    0,
+    255
+   ],
+   "colour": "lime",
+   "expect_if_never_rendered": "lime",
+   "matches": true,
+   "hash": "3f21d01d",
+   "alpha_nonzero": 10000,
+   "error": null
+  }
+ ]
+}

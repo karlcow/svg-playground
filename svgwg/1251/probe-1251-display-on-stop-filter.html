@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>probe-1251-display-on-stop-filter</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/render.html#TermNeverRenderedElement">
+<link rel="help" href="https://drafts.csswg.org/filter-effects-1/#FilterElement">
+<!--
+  svgwg#1251: should stop, filter and view be never-rendered elements?
+
+  SVG 2 says display has no effect on a never-rendered element
+  (render.html#VisibilityControl). This probe measures what display: none
+  does today on the three elements that are in neither list.
+
+  Observable: each case is one SVG document, drawn through an <img> (data URL)
+  into a 100x100 canvas; the probe reads the colour of one pixel and names it
+  (lime, red, blue, transparent, other).
+
+  - stop: does a display:none stop still count in its gradient?
+    Source reading (not run): WebKit and Blink walk the stop elements
+    (SVGGradientElement::buildStops, svg_gradient_element.cc:177) and keep it;
+    Gecko builds stops from layout boxes (SVGGradientFrame::GetStops) and a
+    display:none element gets no box, so Gecko drops it.
+  - filter: Filter Effects already says display does not apply to filter,
+    even on an ancestor.
+  - view: not measured here. A first version drew view cases with a #v
+    fragment; WebKit (WKWebView, 2026-11-19) applied no fragment view to an
+    SVG image drawn into a canvas, whether data URL, blob URL or
+    #svgView(), so the control failed and the rows were removed. From
+    source, all three engines find the view by id and ignore display
+    (WebKit findAnchor, Gecko SVGFragmentIdentifier.cpp:158, Blink
+    SVGViewElement::LayoutObjectIsNeeded returns false).
+
+  Controls: stop_ctl_lime twice (same answer), stop_ctl_blue (must differ
+  from lime), stop_ctl_nostops (must be transparent, so "transparent" is a
+  measurement), filter_ctl_nofilter (must be red).
+
+  Do not infer from the payload anything about inline SVG in HTML: every case
+  is an SVG image document.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 80rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ .PASS { color: #060; font-weight: 700; }
+ .FAIL { color: #a00; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .6rem; overflow-x: auto; font-size: 11px; margin: 0; }
+ td pre { white-space: pre-wrap; max-width: 34rem; }
+ h2 { font-size: 15px; margin-top: 1.6rem; }
+ canvas { image-rendering: pixelated; border: 1px solid #ccc; width: 64px; height: 64px; background: repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0 / 16px 16px; }
+</style>
+
+<h1>svgwg#1251: display: none on stop and filter</h1>
+<p id="status">running...</p>
+<p id="ua"></p>
+<table id="out">
+ <tr><th>case</th><th>rendered</th><th>pixel</th><th>colour</th><th>expected if never-rendered</th><th>role</th><th>code (the SVG document drawn, and the URL fragment)</th></tr>
+</table>
+<h2>JSON payload</h2>
+<pre id="json">…</pre>
+
+<script>
+// Every case string is the whole SVG document that is drawn. The code column
+// prints that same string, so what is shown is what runs. Only the xmlns
+// wrapper is added by svgDoc() and left out of the display.
+const W = 100, H = 100;
+const svgDoc = (body) => '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">' + body + '</svg>';
+
+const RED_RECT = '<rect width="100" height="100" fill="red"/>';
+const CASES = [
+  // ---- stop
+  { id: 'stop_ctl_lime', role: 'control', expect: 'lime', at: [50, 50],
+    body: '<linearGradient id="g">\n  <stop offset="0" stop-color="lime"/>\n</linearGradient>\n<rect width="100" height="100" fill="url(#g)"/>' },
+  { id: 'stop_ctl_lime_repeat', role: 'control: same as stop_ctl_lime', expect: 'lime', at: [50, 50],
+    body: '<linearGradient id="g">\n  <stop offset="0" stop-color="lime"/>\n</linearGradient>\n<rect width="100" height="100" fill="url(#g)"/>' },
+  { id: 'stop_ctl_blue', role: 'control: must differ from lime', expect: 'blue', at: [50, 50],
+    body: '<linearGradient id="g">\n  <stop offset="0" stop-color="blue"/>\n</linearGradient>\n<rect width="100" height="100" fill="url(#g)"/>' },
+  { id: 'stop_ctl_nostops', role: 'control: blank (no stops paints nothing)', expect: 'transparent', at: [50, 50],
+    body: '<linearGradient id="g"></linearGradient>\n<rect width="100" height="100" fill="url(#g)"/>' },
+  { id: 'stop_style_none', role: 'target', expect: 'lime', at: [50, 50],
+    body: '<linearGradient id="g">\n  <stop offset="0" stop-color="lime" style="display: none"/>\n</linearGradient>\n<rect width="100" height="100" fill="url(#g)"/>' },
+  { id: 'stop_attr_none', role: 'target', expect: 'lime', at: [50, 50],
+    body: '<linearGradient id="g">\n  <stop offset="0" stop-color="lime" display="none"/>\n</linearGradient>\n<rect width="100" height="100" fill="url(#g)"/>' },
+  { id: 'stop_only_none_then_blue', role: 'target (dropping gives solid blue)', expect: 'lime', at: [2, 50],
+    body: '<linearGradient id="g">\n  <stop offset="0.5" stop-color="lime" style="display: none"/>\n  <stop offset="0.5" stop-color="blue"/>\n</linearGradient>\n<rect width="100" height="100" fill="url(#g)"/>' },
+  // ---- filter
+  { id: 'filter_ctl', role: 'control', expect: 'lime', at: [50, 50],
+    body: '<filter id="f">\n  <feFlood flood-color="lime"/>\n</filter>\n<rect width="100" height="100" fill="red" filter="url(#f)"/>' },
+  { id: 'filter_ctl_nofilter', role: 'control: must differ from lime', expect: 'red', at: [50, 50],
+    body: RED_RECT },
+  { id: 'filter_style_none', role: 'target', expect: 'lime', at: [50, 50],
+    body: '<filter id="f" style="display: none">\n  <feFlood flood-color="lime"/>\n</filter>\n<rect width="100" height="100" fill="red" filter="url(#f)"/>' },
+  { id: 'filter_ancestor_none', role: 'target', expect: 'lime', at: [50, 50],
+    body: '<g style="display: none">\n  <filter id="f">\n    <feFlood flood-color="lime"/>\n  </filter>\n</g>\n<rect width="100" height="100" fill="red" filter="url(#f)"/>' },
+];
+
+function colourName([r, g, b, a]) {
+  if (a < 16) return 'transparent';
+  if (a > 240 && g > 200 && r < 60 && b < 60) return 'lime';
+  if (a > 240 && r > 200 && g < 60 && b < 60) return 'red';
+  if (a > 240 && b > 200 && r < 60 && g < 60) return 'blue';
+  return 'other';
+}
+
+function measure(d) {
+  let hash = 0x811c9dc5, alphaNonZero = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] > 0) alphaNonZero++;
+    for (let c = 0; c < 4; c++) { hash ^= d[i + c]; hash = (hash * 0x01000193) >>> 0; }
+  }
+  return { hash: hash.toString(16).padStart(8, '0'), alphaNonZero, blank: alphaNonZero === 0 };
+}
+
+function draw(c) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.width = W; img.height = H;
+    img.onload = () => {
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      try {
+        ctx.drawImage(img, 0, 0, W, H);
+        const all = ctx.getImageData(0, 0, W, H).data;
+        const px = Array.from(ctx.getImageData(c.at[0], c.at[1], 1, 1).data);
+        resolve({ cv, px, ...measure(all) });
+      } catch (e) { resolve({ cv, error: e.name + ': ' + e.message }); }
+    };
+    img.onerror = () => resolve({ error: 'image failed to load' });
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgDoc(c.body)) + (c.frag ? '#' + c.frag : '');
+  });
+}
+
+function codeCell(c) {
+  const pre = document.createElement('pre');
+  pre.textContent = c.body + (c.frag ? '\n\nURL fragment: #' + c.frag : '');
+  return pre;
+}
+
+const asciiJSON = (o) => JSON.stringify(o, null, 1)
+  .replace(/[\u007f-\uffff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+
+(async () => {
+  const ua = navigator.userAgent;
+  document.getElementById('ua').textContent = ua;
+  const table = document.getElementById('out');
+  const results = [];
+  for (const c of CASES) {
+    const r = await draw(c);
+    const colour = r.px ? colourName(r.px) : 'error';
+    const row = { id: c.id, role: c.role, fragment: c.frag || null, pixel_at: c.at, pixel: r.px || null,
+                  colour, expect_if_never_rendered: c.expect, matches: colour === c.expect,
+                  hash: r.hash || null, alpha_nonzero: r.alphaNonZero ?? null, error: r.error || null };
+    if (c.note) row.note = c.note;
+    results.push(row);
+    const tr = table.insertRow();
+    tr.insertCell().textContent = c.id;
+    const cvCell = tr.insertCell(); if (r.cv) cvCell.append(r.cv);
+    tr.insertCell().textContent = r.px ? r.px.join(',') + ' at ' + c.at.join(',') : r.error;
+    const k = tr.insertCell(); k.textContent = colour; k.className = colour === c.expect ? 'PASS' : 'FAIL';
+    tr.insertCell().textContent = c.expect;
+    tr.insertCell().textContent = c.role;
+    tr.insertCell().append(codeCell(c));
+  }
+  const by = Object.fromEntries(results.map(r => [r.id, r]));
+  const controls = {
+    determinism: by.stop_ctl_lime.hash === by.stop_ctl_lime_repeat.hash,
+    stop_lime: by.stop_ctl_lime.colour === 'lime',
+    stop_blue_differs: by.stop_ctl_blue.colour === 'blue',
+    blank_detectable: by.stop_ctl_nostops.colour === 'transparent',
+    filter_works: by.filter_ctl.colour === 'lime',
+    filter_absent_red: by.filter_ctl_nofilter.colour === 'red',
+  };
+  const engine_hint = /Firefox\//.test(ua) ? 'gecko' : /Chrome\//.test(ua) ? 'blink' : /AppleWebKit/.test(ua) ? 'webkit' : 'unknown';
+  const payload = {
+    probe: 'probe-1251-display-on-stop-filter',
+    issue: 'https://github.com/w3c/svgwg/issues/1251',
+    user_agent: ua, engine_hint, character_set: document.characterSet,
+    controls, controls_passed: Object.values(controls).every(Boolean),
+    spec_expectation: 'if stop and filter are never-rendered elements, display: none has no effect on them: every target is lime',
+    source_prediction: 'stop targets: lime in WebKit and Blink, dropped in Gecko (transparent, or blue for stop_only_none_then_blue); filter targets lime everywhere',
+    targets: results.filter(r => r.role.startsWith('target')).map(r => ({ id: r.id, colour: r.colour, matches: r.matches })),
+    cases: results,
+  };
+  document.getElementById('json').textContent = asciiJSON(payload);
+  document.getElementById('status').textContent = 'done. controls ' + (payload.controls_passed ? 'passed' : 'FAILED: ' + Object.entries(controls).filter(([, v]) => !v).map(([k]) => k).join(', '));
+})();
+</script>
+
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
+</html>
