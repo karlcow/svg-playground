@@ -20,6 +20,8 @@ To run the keyboard rows, press "Start keyboard test", then press `a`.
 
 From the files in [results/](results/). All on 2026-11-18. All controls passed, and every row matched the prediction from source.
 
+The browsers were preview builds: Safari Technology Preview 256, Chrome Canary 160 and Firefox Nightly 162. The version numbers in the table and in the file names come from their user agent strings.
+
 | Case | Safari 27.0 | Chrome 160 | Firefox 162 |
 |---|---|---|---|
 | `begin="accessKey(a)"`, user presses `a` | nothing | nothing | nothing |
