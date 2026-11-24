@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: is a view id matched as written first, or only after percent-decoding? (svgwg#1170)</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/linking.html#SVGFragmentIdentifiersDefinitions">
+<link rel="help" href="https://html.spec.whatwg.org/multipage/browsing-the-web.html#select-the-indicated-part">
+<!--
+  svgwg#1170, part 2 (the url-escaping note). Written 2026-11-24.
+
+  Question: when a URL points into an SVG document with a fragment that
+  contains a percent escape, is the fragment compared with the ids as written
+  first (HTML's order for #id), or only after percent-decoding?
+
+  The SVG document has four coloured quadrants and two views:
+    <view id="v%41" viewBox="100 0 100 100"/>  shows the ORANGE quadrant
+    <view id="vA"   viewBox="0 100 100 100"/>  shows the TEAL quadrant
+  The fragment #v%41 picks ORANGE if it is tried as written first, TEAL if it
+  is only compared after decoding (%41 is "A").
+
+  Two methods per case, both reading the result with script, no human mark:
+    img:    the SVG is loaded in an img with the fragment, drawn into a canvas,
+            and the colours counted (same method as probe-svgview-spaces.html
+            and probe-svgview-whitespace-escaping.html in svg-playground/svgwg/1170).
+            One dominant colour = a view was applied; four colours = no view.
+    iframe: the SVG is loaded in an iframe with the fragment, and
+            elementFromPoint(50, 50) inside it says which quadrant is under
+            the top-left area of the frame. Needs the iframe to be readable
+            (same origin). If it is not, the iframe column says so and only
+            the img column counts.
+
+  Controls (per method):
+    ctl_no_fragment  must NOT change: no fragment, four colours (img), gray (iframe).
+    ctl_vA           MUST change: #vA applies the teal view.
+  If a method's controls fail, nothing in that method's column can be quoted.
+
+  The SVG is served as a blob URL so the page works from file:// and https.
+  The markup shown beside each case is what an author would write
+  (views.svg#...); the blob URL is the probe's way of serving that file and is
+  not shown.
+
+  Predictions, written before any run, derived from the WebKit, Gecko and
+  Blink source code (2026-11-21), not measured:
+    WebKit, Gecko: as written first, then decoded.
+    Blink: decoded only; for an SVG used as an image, decoded twice.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 82rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ pre { background: #f5f5f5; padding: .5rem; overflow-x: auto; font-size: 11px; margin: 0; }
+ pre.code { white-space: pre; }
+ h2 { font-size: 15px; margin-top: 1.6rem; }
+ .live { display: flex; gap: 6px; align-items: flex-start; }
+ .live img, .live iframe { width: 100px; height: 100px; border: 1px solid #999; }
+ .res { font-weight: 700; }
+ .orange { color: #c06000; } .teal { color: #006060; } .none { color: #555; } .bad { color: #a00; }
+ #ua { font-family: ui-monospace, monospace; font-size: 11px; }
+</style>
+
+<h1>Is a view id matched as written first, or only after percent-decoding?</h1>
+<p id="ua"></p>
+<p id="status">running...</p>
+<p>Each SVG document has four quadrants: <b>gray</b> top left, <b class="orange">orange</b> top right, <b class="teal">teal</b> bottom left, <b>purple</b> bottom right. <code>&lt;view id="v%41"&gt;</code> shows orange, <code>&lt;view id="vA"&gt;</code> shows teal. So for <code>#v%41</code>: <b class="orange">orange</b> means the fragment was matched as written, <b class="teal">teal</b> means it was matched after decoding, four colours (img) or gray (iframe) means no view.</p>
+
+<table id="out">
+ <thead><tr><th>case</th><th>markup (views.svg, then the reference)</th><th>live: img, iframe</th><th>img result</th><th>iframe result</th><th>prediction (from source, not measured)</th></tr></thead>
+ <tbody></tbody>
+</table>
+
+<h2>JSON payload</h2>
+<pre id="json">running...</pre>
+
+<script>
+// ---------------------------------------------------------------------
+// The SVG documents. Quadrants are 100 by 100 in a 200 by 200 drawing.
+// ---------------------------------------------------------------------
+const QUADRANTS =
+  '  <rect id="gray" x="0" y="0" width="100" height="100" fill="#808080"/>\n' +
+  '  <rect id="orange" x="100" y="0" width="100" height="100" fill="#ff8000"/>\n' +
+  '  <rect id="teal" x="0" y="100" width="100" height="100" fill="#008080"/>\n' +
+  '  <rect id="purple" x="100" y="100" width="100" height="100" fill="#800080"/>\n';
+const VIEW_RAW = '  <view id="v%41" viewBox="100 0 100 100"/>\n';   // orange
+const VIEW_DEC = '  <view id="vA" viewBox="0 100 100 100"/>\n';     // teal
+
+function svgDoc(views) {
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">\n' +
+         views + QUADRANTS + '</svg>';
+}
+const DOCS = {
+  both: svgDoc(VIEW_RAW + VIEW_DEC),
+  raw_only: svgDoc(VIEW_RAW),
+  decoded_only: svgDoc(VIEW_DEC)
+};
+
+// Colours as the canvas reads them (r,g,b).
+const COLOURS = { '128,128,128': 'gray', '255,128,0': 'orange', '0,128,128': 'teal', '128,0,128': 'purple' };
+
+// ---------------------------------------------------------------------
+// The cases. `predict` is written before the run.
+// ---------------------------------------------------------------------
+const CASES = [
+  { id: 'ctl_no_fragment', doc: 'both', frag: '', control: 'must not change',
+    want: { img: 'no view', iframe: 'gray' },
+    predict: 'all: no view (img), gray (iframe)' },
+  { id: 'ctl_vA', doc: 'both', frag: '#vA', control: 'must change',
+    want: { img: 'teal', iframe: 'teal' },
+    predict: 'all: teal' },
+  { id: 'q_both', doc: 'both', frag: '#v%41',
+    predict: 'WebKit, Gecko: orange (as written first). Blink: teal (decoded only)' },
+  { id: 'q_raw_only', doc: 'raw_only', frag: '#v%41',
+    predict: 'WebKit, Gecko: orange. Blink: no view (never tries it as written)' },
+  { id: 'q_decoded_only', doc: 'decoded_only', frag: '#v%41',
+    predict: 'all: teal (the decoded try finds vA)' },
+  { id: 'q_double', doc: 'both', frag: '#v%2541',
+    predict: 'WebKit, Gecko: orange (decoded once to v%41). Blink: img teal (decoded twice to vA), iframe orange' }
+];
+
+// ---------------------------------------------------------------------
+// Measurement.
+// ---------------------------------------------------------------------
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const blobURL = (text) => URL.createObjectURL(new Blob([text], { type: 'image/svg+xml' }));
+
+async function measureImg(img, url) {
+  const ok = await new Promise((r) => { img.onload = () => r(true); img.onerror = () => r(false); img.src = url; });
+  if (!ok) return { result: 'load failed' };
+  img.getBoundingClientRect();
+  await sleep(90);
+  const N = 32, c = document.createElement('canvas');
+  c.width = c.height = N;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, N, N);
+  let d;
+  try { d = ctx.getImageData(0, 0, N, N).data; }
+  catch (e) { return { result: 'cannot read pixels (' + e.name + ')' }; }
+  const m = new Map();
+  for (let i = 0; i < d.length; i += 4) {
+    const k = d[i] + ',' + d[i + 1] + ',' + d[i + 2];
+    m.set(k, (m.get(k) || 0) + 1);
+  }
+  const s = [...m.entries()].sort((a, b) => b[1] - a[1]);
+  const dominant = COLOURS[s[0][0]] || s[0][0];
+  const pct = Math.round(s[0][1] / (N * N) * 100);
+  let result;
+  if (pct >= 90 && COLOURS[s[0][0]]) result = dominant;
+  else if (s.filter(([k, n]) => COLOURS[k] && n / (N * N) > 0.15).length >= 3) result = 'no view';
+  else result = 'unclear';
+  return { result: result, distinct: s.length, dominant: dominant, pct: pct };
+}
+
+async function measureFrame(frame, url) {
+  const ok = await new Promise((r) => {
+    const t = setTimeout(() => r(false), 3000);
+    frame.onload = () => { clearTimeout(t); r(true); };
+    frame.src = url;
+  });
+  if (!ok) return { result: 'load timeout' };
+  await sleep(90);
+  let doc;
+  try { doc = frame.contentDocument; } catch (e) { return { result: 'cannot read frame (' + e.name + ')' }; }
+  if (!doc || !doc.documentElement) return { result: 'cannot read frame (no document)' };
+  const el = doc.elementFromPoint(50, 50);
+  return { result: el ? (el.id || el.localName) : 'nothing at (50, 50)' };
+}
+
+// What an author would write for this case, shown beside the row.
+function markupFor(c) {
+  const ref = 'views.svg' + c.frag;
+  return DOCS[c.doc] + '\n\n<img src="' + ref + '">\n<iframe src="' + ref + '"></iframe>';
+}
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const cls = (r) => r === 'orange' ? 'orange' : r === 'teal' ? 'teal' : (r === 'no view' || r === 'gray') ? 'none' : 'bad';
+
+document.getElementById('ua').textContent = 'User agent: ' + navigator.userAgent;
+
+(async () => {
+  const tbody = document.querySelector('#out tbody');
+  const rows = [];
+  for (const c of CASES) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td><code>' + c.id + '</code>' + (c.control ? '<br>control, ' + c.control : '') + '</td>' +
+      '<td><pre class="code">' + esc(markupFor(c)) + '</pre></td>' +
+      '<td><div class="live"></div></td><td class="res">...</td><td class="res">...</td><td>' + esc(c.predict) + '</td>';
+    tbody.appendChild(tr);
+    const live = tr.children[2].firstChild;
+    const img = document.createElement('img');
+    const frame = document.createElement('iframe');
+    live.append(img, frame);
+    const text = DOCS[c.doc];
+    const mi = await measureImg(img, blobURL(text) + c.frag);
+    const mf = await measureFrame(frame, blobURL(text) + c.frag);
+    tr.children[3].textContent = mi.result; tr.children[3].className = 'res ' + cls(mi.result);
+    tr.children[4].textContent = mf.result; tr.children[4].className = 'res ' + cls(mf.result);
+    rows.push({ id: c.id, document: c.doc, fragment: c.frag, control: c.control || null,
+                img: mi, iframe: mf, prediction: c.predict });
+  }
+
+  const by = Object.fromEntries(rows.map((r) => [r.id, r]));
+  const imgControls = by.ctl_no_fragment.img.result === 'no view' && by.ctl_vA.img.result === 'teal';
+  const frameControls = by.ctl_no_fragment.iframe.result === 'gray' && by.ctl_vA.iframe.result === 'teal';
+
+  const ua = navigator.userAgent;
+  const engineHint = /Firefox\//.test(ua) ? 'gecko' : /Chrome\/|Chromium\//.test(ua) ? 'blink' : /AppleWebKit/.test(ua) ? 'webkit' : 'unknown';
+  const payload = {
+    probe: 'probe-1170-view-id-percent-order',
+    issue: 'https://github.com/w3c/svgwg/issues/1170',
+    date: new Date().toISOString(),
+    user_agent: ua,
+    engine_hint: engineHint,
+    character_set: document.characterSet,
+    controls_passed: imgControls,
+    controls_passed_img: imgControls,
+    controls_passed_iframe: frameControls,
+    reading: 'For #v%41 with both views: orange = matched as written first, teal = matched only after decoding. q_raw_only tells whether the as-written form is tried at all, q_decoded_only whether decoding happens at all, q_double whether the fragment is decoded more than once.',
+    note: 'controls_passed is the img method. If controls_passed_iframe is false, ignore the iframe column (often a cross-origin blob frame from file://).',
+    rows: rows
+  };
+  document.getElementById('json').textContent = JSON.stringify(payload, null, 1)
+    .replace(/[\u007f-\uffff]/g, (ch) => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
+  document.getElementById('status').textContent = 'done. img controls ' + (imgControls ? 'passed' : 'FAILED') +
+    ', iframe controls ' + (frameControls ? 'passed' : 'FAILED') + '.';
+})();
+</script>
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
