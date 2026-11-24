@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: is a ligature formed across a tspan boundary? CSS Text rules in SVG (svgwg#634)</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/text.html#FontsGlyphs">
+<link rel="help" href="https://drafts.csswg.org/css-text-3/#boundary-shaping">
+<!--
+  svgwg#634. Written 2026-11-24.
+
+  CSS Text 3, 7.3 Shaping Across Element Boundaries: shaping MUST break when
+  margin/border/padding at the boundary is non-zero, when vertical-align is not
+  its initial value (in CSS Inline 3 a shorthand of alignment-baseline and
+  baseline-shift, "on SVG elements" too), or at a bidi isolation boundary. It
+  MUST NOT break when there is no effective change in formatting, or when the
+  only changes do not affect the glyphs (text decoration). SVG 2 today says
+  the opposite: "characters separated by markup should not use ligatures".
+
+  Each case puts "f" and "i" in one <text>, split by a <tspan> (or not), in
+  Lato-Medium-Liga (the WPT font, which has an fi ligature), loaded from the
+  file next to this page.
+
+  Reading, by script: getComputedTextLength() of the whole <text>, the sum of
+  the glyph advances (dx is not included), compared with two references
+  measured on this page the same way:
+    ref_ligature   <text>fi</text>                                 one glyph
+    ref_separate   <text style="font-variant-ligatures: none">fi</text>  two glyphs
+  The case is "ligature" if its value is closer to ref_ligature, "separate"
+  if closer to ref_separate. getSubStringLength(1, 1) is shown for information
+  only: it is 0 when "i" is inside a ligature, but WebKit's character queries
+  are wrong across a tspan boundary, so it does not decide anything. The drawn
+  text is beside each row.
+
+  Controls:
+    ctl_refs_differ   ref_ligature MUST be narrower than ref_separate by more
+                      than 0.5 (the Lato fi ligature saves about 1 unit at 60px;
+                      else the font did not load or has no ligature: nothing counts).
+    ctl_same_as_ref   <text>fi</text> again MUST read "ligature".
+
+  Expected, from the CSS rules (written before any run). "SVG only" rows have
+  no CSS rule; SVG 2 keeps its text chunk bullet for x and y.
+-->
+<style>
+@font-face { font-family: "Lato-Medium-Liga"; src: url("Lato-Medium-Liga.ttf"); }
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 96rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; } .g { background: #f0f0f0; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .4rem; font-size: 11px; margin: 0; white-space: pre-wrap; }
+ .lig { color: #060; font-weight: 700; } .sep { color: #a00; font-weight: 700; } .unc { color: #a60; font-weight: 700; }
+ svg.case { border: 1px solid #ccc; }
+ #ua { font-family: ui-monospace, monospace; font-size: 11px; }
+</style>
+<h1>Is a ligature formed across a <code>tspan</code> boundary? (svgwg#634)</h1>
+<p id="ua"></p>
+<p id="status">running...</p>
+<p id="refs"></p>
+<table id="out">
+ <thead><tr><th>case</th><th>markup</th><th>drawn</th><th>getComputedTextLength()</th><th>getSubStringLength(1, 1), information only</th><th>result</th><th>expected</th></tr></thead>
+ <tbody></tbody>
+</table>
+<h2>JSON payload</h2>
+<pre id="json">running...</pre>
+<script>
+const F = 'font-family="Lato-Medium-Liga" font-size="60"';
+const CASES = [
+  { group: 'Controls' },
+  { id: 'ctl_same_as_ref', inner: 'fi', control: 'must read ligature', expect: 'ligature' },
+
+  { group: 'CSS: must not break (no change, or changes that do not affect glyphs)' },
+  { id: 'plain_tspan', inner: 'f<tspan>i</tspan>', expect: 'ligature (CSS must not break)' },
+  { id: 'tspan_fill', inner: 'f<tspan fill="green">i</tspan>', expect: 'ligature (paint does not affect glyphs)' },
+  { id: 'tspan_text_decoration', inner: 'f<tspan text-decoration="underline">i</tspan>', expect: 'ligature (CSS example: text decoration)' },
+  { id: 'tspan_baseline_shift_zero', inner: 'f<tspan baseline-shift="0">i</tspan>', expect: 'ligature (baseline-shift at its initial value)' },
+  { id: 'tspan_padding', inner: 'f<tspan style="padding-left: 10px">i</tspan>', expect: 'ligature (padding does not apply to tspan, so nothing separates them)' },
+
+  { group: 'CSS: must break' },
+  { id: 'tspan_baseline_shift', inner: 'f<tspan baseline-shift="10">i</tspan>', expect: 'separate (vertical-align not initial)' },
+  { id: 'tspan_vertical_align', inner: 'f<tspan style="vertical-align: 10px">i</tspan>', expect: 'separate (vertical-align not initial)' },
+  { id: 'tspan_bidi_isolate', inner: 'f<tspan style="unicode-bidi: isolate">i</tspan>', expect: 'separate (bidi isolation boundary)' },
+
+  { group: 'CSS: changes that affect the glyphs (should not break if reasonable)' },
+  { id: 'tspan_font_weight', inner: 'f<tspan font-weight="bold">i</tspan>', expect: 'separate expected in practice (different font face)' },
+
+  { group: 'SVG only (no CSS rule)' },
+  { id: 'tspan_x', inner: 'f<tspan x="40">i</tspan>', expect: 'separate (new text chunk, SVG 2 bullet kept)' },
+  { id: 'tspan_dx', inner: 'f<tspan dx="5">i</tspan>', expect: 'not specified' },
+  { id: 'text_dx', inner: 'fi', attrs: 'dx="0 5"', expect: 'ligature (WPT text-query-ligature-dx.html)' },
+  { id: 'tspan_rotate', inner: 'f<tspan rotate="10">i</tspan>', expect: 'not specified' }
+];
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const markupOf = (c) => '<text ' + (c.attrs ? c.attrs + ' ' : '') + 'font-family="Lato-Medium-Liga" font-size="60">' + c.inner + '</text>';
+function makeText(svg, attrs, inner, style) {
+  svg.innerHTML = '<text x="5" y="70" ' + F + ' ' + (attrs || '') + (style ? ' style="' + style + '"' : '') + '>' + inner + '</text>';
+  return svg.firstChild;
+}
+function newSvg() { const s = document.createElementNS(SVGNS, 'svg'); s.setAttribute('width', '160'); s.setAttribute('height', '90'); s.setAttribute('class', 'case'); return s; }
+
+document.getElementById('ua').textContent = 'User agent: ' + navigator.userAgent;
+
+document.fonts.load('60px "Lato-Medium-Liga"', 'fi').then(() => document.fonts.ready).then(() => {
+  const host = document.createElement('div'); document.body.appendChild(host);
+  const s1 = newSvg(), s2 = newSvg(); host.append(s1, s2);
+  const refLig = makeText(s1, '', 'fi').getComputedTextLength();
+  const refSep = makeText(s2, '', 'fi', 'font-variant-ligatures: none').getComputedTextLength();
+  document.getElementById('refs').innerHTML = 'ref_ligature <code>&lt;text&gt;fi&lt;/text&gt;</code>: <b>' + refLig.toFixed(3) +
+    '</b>. ref_separate <code>&lt;text style="font-variant-ligatures: none"&gt;fi&lt;/text&gt;</code>: <b>' + refSep.toFixed(3) + '</b>.';
+  const tbody = document.querySelector('#out tbody');
+  const rows = [];
+  for (const c of CASES) {
+    const tr = document.createElement('tr');
+    if (c.group) { tr.innerHTML = '<td class="g" colspan="7">' + esc(c.group) + '</td>'; tbody.appendChild(tr); continue; }
+    const svg = newSvg();
+    const t = makeText(svg, c.attrs, c.inner);
+    tr.innerHTML = '<td><code>' + esc(c.id) + '</code>' + (c.control ? '<br>control, ' + esc(c.control) : '') + '</td><td><pre>' + esc(markupOf(c)) + '</pre></td><td></td><td></td><td></td><td></td><td>' + esc(c.expect) + '</td>';
+    tr.children[2].appendChild(svg);
+    tbody.appendChild(tr);
+    let both, second, result;
+    try {
+      both = t.getComputedTextLength(); try { second = t.getSubStringLength(1, 1); } catch (e) { second = undefined; }
+      const dl = Math.abs(both - refLig), ds = Math.abs(both - refSep);
+      result = Math.abs(dl - ds) < 0.25 ? 'unclear' : (dl < ds ? 'ligature' : 'separate');
+    } catch (e) { result = 'threw ' + e.name; }
+    tr.children[3].textContent = both === undefined ? '' : both.toFixed(3);
+    tr.children[4].textContent = second === undefined ? '' : second.toFixed(3);
+    tr.children[5].textContent = result;
+    tr.children[5].className = result === 'ligature' ? 'lig' : result === 'separate' ? 'sep' : 'unc';
+    rows.push({ id: c.id, markup: markupOf(c), control: c.control || null, expected: c.expect,
+                computed_text_length: both, substring_1_1: second, result: result });
+  }
+  const by = Object.fromEntries(rows.map((r) => [r.id, r]));
+  const controlsPassed = refLig < refSep - 0.5 && by.ctl_same_as_ref.result === 'ligature';
+  const ua = navigator.userAgent;
+  const engineHint = /Firefox\//.test(ua) ? 'gecko' : /Chrome\/|Chromium\//.test(ua) ? 'blink' : /AppleWebKit/.test(ua) ? 'webkit' : 'unknown';
+  document.getElementById('json').textContent = JSON.stringify({
+    probe: 'probe-634-tspan-boundary-shaping',
+    issue: 'https://github.com/w3c/svgwg/issues/634',
+    date: new Date().toISOString(),
+    user_agent: ua, engine_hint: engineHint, character_set: document.characterSet,
+    ref_ligature: refLig, ref_separate: refSep, controls_passed: controlsPassed,
+    note: 'result compares getComputedTextLength() with the two references. substring_1_1 is information only (0 when i is inside a ligature; unreliable across a tspan in WebKit).',
+    rows: rows
+  }, null, 1).replace(/[\u007f-\uffff]/g, (ch) => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
+  document.getElementById('status').textContent = 'done. controls ' + (controlsPassed ? 'passed' : 'FAILED (font not loaded, or no ligature)') + '.';
+});
+</script>
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>

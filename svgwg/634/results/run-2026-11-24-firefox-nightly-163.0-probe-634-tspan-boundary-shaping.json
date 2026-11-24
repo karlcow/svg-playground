@@ -1,0 +1,142 @@
+{
+ "probe": "probe-634-tspan-boundary-shaping",
+ "issue": "https://github.com/w3c/svgwg/issues/634",
+ "date": "2026-11-24T09:31:20.480Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:163.0) Gecko/20100101 Firefox/163.0",
+ "engine_hint": "gecko",
+ "character_set": "UTF-8",
+ "ref_ligature": 34.766666412353516,
+ "ref_separate": 35.766666412353516,
+ "controls_passed": false,
+ "note": "result compares getComputedTextLength() with the two references. substring_1_1 is information only (0 when i is inside a ligature; unreliable across a tspan in WebKit).",
+ "rows": [
+  {
+   "id": "ctl_same_as_ref",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">fi</text>",
+   "control": "must read ligature",
+   "expected": "ligature",
+   "computed_text_length": 34.766666412353516,
+   "substring_1_1": 17.383333206176758,
+   "result": "ligature"
+  },
+  {
+   "id": "plain_tspan",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan>i</tspan></text>",
+   "control": null,
+   "expected": "ligature (CSS must not break)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_fill",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan fill=\"green\">i</tspan></text>",
+   "control": null,
+   "expected": "ligature (paint does not affect glyphs)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_text_decoration",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan text-decoration=\"underline\">i</tspan></text>",
+   "control": null,
+   "expected": "ligature (CSS example: text decoration)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_baseline_shift_zero",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan baseline-shift=\"0\">i</tspan></text>",
+   "control": null,
+   "expected": "ligature (baseline-shift at its initial value)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_padding",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan style=\"padding-left: 10px\">i</tspan></text>",
+   "control": null,
+   "expected": "ligature (padding does not apply to tspan, so nothing separates them)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_baseline_shift",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan baseline-shift=\"10\">i</tspan></text>",
+   "control": null,
+   "expected": "separate (vertical-align not initial)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_vertical_align",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan style=\"vertical-align: 10px\">i</tspan></text>",
+   "control": null,
+   "expected": "separate (vertical-align not initial)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_bidi_isolate",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan style=\"unicode-bidi: isolate\">i</tspan></text>",
+   "control": null,
+   "expected": "separate (bidi isolation boundary)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_font_weight",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan font-weight=\"bold\">i</tspan></text>",
+   "control": null,
+   "expected": "separate expected in practice (different font face)",
+   "computed_text_length": 37.016666412353516,
+   "substring_1_1": 15.866666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_x",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan x=\"40\">i</tspan></text>",
+   "control": null,
+   "expected": "separate (new text chunk, SVG 2 bullet kept)",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "tspan_dx",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan dx=\"5\">i</tspan></text>",
+   "control": null,
+   "expected": "not specified",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  },
+  {
+   "id": "text_dx",
+   "markup": "<text dx=\"0 5\" font-family=\"Lato-Medium-Liga\" font-size=\"60\">fi</text>",
+   "control": null,
+   "expected": "ligature (WPT text-query-ligature-dx.html)",
+   "computed_text_length": 34.766666412353516,
+   "substring_1_1": 17.383333206176758,
+   "result": "ligature"
+  },
+  {
+   "id": "tspan_rotate",
+   "markup": "<text font-family=\"Lato-Medium-Liga\" font-size=\"60\">f<tspan rotate=\"10\">i</tspan></text>",
+   "control": null,
+   "expected": "not specified",
+   "computed_text_length": 35.766666412353516,
+   "substring_1_1": 14.616666793823242,
+   "result": "separate"
+  }
+ ],
+ "controls_passed_recomputed": true,
+ "recompute_note": "controls_passed was computed with a threshold of 1 unit between the references, too strict for this font (the fi ligature saves about 1 unit). Recomputed with 0.5, as in the fixed probe. Rows are unchanged."
+}

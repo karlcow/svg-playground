@@ -1,0 +1,98 @@
+{
+ "probe": "probe-634-tspan-boundary-shaping",
+ "issue": "https://github.com/w3c/svgwg/issues/634",
+ "date": "2026-11-24T09:29:34.301Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "ref_ligature": 35.7599983215332,
+ "ref_separate": 35.7599983215332,
+ "controls_passed": false,
+ "run_by": "embedded WKWebView, system WebKit of macOS 27.3 (Safari 27.3 engine; the user agent string says Version/26.4). Controls fail because WebKit forms no fi ligature in SVG text: both references are 35.76. Markup and expectations per row are in the probe.",
+ "rows": [
+  {
+   "id": "ctl_same_as_ref",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "plain_tspan",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_fill",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_text_decoration",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_baseline_shift_zero",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_padding",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_baseline_shift",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_vertical_align",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_bidi_isolate",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_font_weight",
+   "computed_text_length": 37.426666259765625,
+   "substring_1_1": 16.27666664123535,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_x",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_dx",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "text_dx",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  },
+  {
+   "id": "tspan_rotate",
+   "computed_text_length": 35.7599983215332,
+   "substring_1_1": 14.609999656677246,
+   "result": "unclear"
+  }
+ ]
+}
