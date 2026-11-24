@@ -1,0 +1,105 @@
+{
+ "probe": "probe-1227-normalize-arcs",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "controls": {
+  "ctl_api": false,
+  "ctl_line_unchanged": false,
+  "ctl_quarter_vs_three_quarters_differ": false
+ },
+ "controls_passed": false,
+ "results": [
+  {
+   "id": "ctl_line",
+   "d": "M 0 0 L 10 0",
+   "result": "no API",
+   "expect_chrome": "M L",
+   "expect_firefox": "M L"
+  },
+  {
+   "id": "ctl_differ_quarter",
+   "d": "M 0 0 A 10 10 0 0 1 10 10",
+   "result": "no API",
+   "expect_chrome": "M C",
+   "expect_firefox": "M C (or M C C if rounding pushes the angle over 90 degrees: Gecko has no tolerance)"
+  },
+  {
+   "id": "ctl_differ_three_quarters",
+   "d": "M 0 0 A 10 10 0 1 1 10 10",
+   "result": "no API",
+   "expect_chrome": "M C C C",
+   "expect_firefox": "M C C C"
+  },
+  {
+   "id": "wpt_small_arc",
+   "d": "M 6 10 A 10 10 10 0 0 15 10",
+   "result": "no API",
+   "expect_chrome": "M C",
+   "expect_firefox": "M C"
+  },
+  {
+   "id": "half_turn",
+   "d": "M 0 0 A 10 10 0 1 0 20 0",
+   "result": "no API",
+   "expect_chrome": "M C C",
+   "expect_firefox": "M C C"
+  },
+  {
+   "id": "near_full_turn",
+   "d": "M 0 0 A 10 10 0 1 1 0.5 0",
+   "result": "no API",
+   "expect_chrome": "M C C C C",
+   "expect_firefox": "M C C C C"
+  },
+  {
+   "id": "rotated_ellipse",
+   "d": "M 0 0 A 20 10 30 1 1 30 10",
+   "result": "no API",
+   "expect_chrome": "same count as Firefox",
+   "expect_firefox": "same count as Chrome"
+  },
+  {
+   "id": "radii_too_small",
+   "d": "M 0 0 A 1 1 0 0 1 10 0",
+   "result": "no API",
+   "expect_chrome": "M C C",
+   "expect_firefox": "M C C"
+  },
+  {
+   "id": "relative_arc",
+   "d": "M 10 10 a 10 10 0 0 1 10 10",
+   "result": "no API",
+   "expect_chrome": "M C",
+   "expect_firefox": "M C"
+  },
+  {
+   "id": "zero_rx",
+   "d": "M 0 0 A 0 10 0 0 1 10 10",
+   "result": "no API",
+   "expect_chrome": "M L",
+   "expect_firefox": "M C (Servo only turns the arc into a line-like C when both radii are 0; derived, uncertain)"
+  },
+  {
+   "id": "zero_both",
+   "d": "M 0 0 A 0 0 0 0 1 10 10",
+   "result": "no API",
+   "expect_chrome": "M L",
+   "expect_firefox": "M C with both control points at 10,10"
+  },
+  {
+   "id": "same_endpoints",
+   "d": "M 5 5 A 10 10 0 0 1 5 5 L 20 20",
+   "result": "no API",
+   "expect_chrome": "M L L (the arc becomes L 5 5)",
+   "expect_firefox": "M L (the arc is dropped)"
+  },
+  {
+   "id": "s_after_arc",
+   "d": "M 0 0 A 10 10 0 0 1 10 10 S 30 10 30 30",
+   "result": "no API",
+   "expect_chrome": "M C C, last C starts with 10 10",
+   "expect_firefox": "M C C, last C starts with 10 10"
+  }
+ ]
+}
