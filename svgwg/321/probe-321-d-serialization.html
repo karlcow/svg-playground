@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: how the d property serializes path data (svgwg#321)</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/paths.html#TheDProperty">
+<!--
+  svgwg#321. Written 2026-11-24.
+
+  WPT already checks part of this: svg/path/property/serialization.svg expects
+  the computed value in absolute commands (Chrome Canary 160 16/16, Firefox
+  Nightly 163 8/16, STP 257 10/16 on wpt.fyi, 2026-11-23), and
+  getComputedStyle.svg checks simple cases. Neither checks how numbers are
+  written or the syntax shortcuts the #321 thread is about. This probe does.
+
+  For each path string, three readings:
+    attr computed    <path d="...">, then getComputedStyle(path).getPropertyValue("d")
+    style specified  <path style='d: path("...")'>, then path.style.getPropertyValue("d")
+    style computed   the same element, getComputedStyle(path).getPropertyValue("d")
+  getPropertyValue, not the .d shortcut, as WPT does: an engine can support
+  the property without exposing the shortcut.
+  The code shown in each row is the markup and the script that run.
+
+  Controls:
+    ctl_none   no d at all: computed MUST be "none".
+    ctl_plain  d="M 0 0 L 10 10": computed MUST be path("M 0 0 L 10 10")
+               (as WPT getComputedStyle.svg expects for the same shape).
+
+  Expectations, written before the run: WPT serialization.svg expects
+  absolute commands in the computed value; nothing specifies the number
+  format (that is #321), so every number row is "not specified".
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 96rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; } .g { background: #f0f0f0; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .4rem; font-size: 11px; margin: 0; white-space: pre-wrap; }
+ code { font-size: 11.5px; } #ua { font-family: ui-monospace, monospace; font-size: 11px; }
+</style>
+<h1>How the <code>d</code> property serializes path data (svgwg#321)</h1>
+<p id="ua"></p>
+<p id="status">running...</p>
+<svg id="host" width="1" height="1" style="position: absolute; left: -10px"></svg>
+<table id="out">
+ <thead><tr><th>case</th><th>code</th><th>attr computed</th><th>style specified</th><th>style computed</th><th>expected</th></tr></thead>
+ <tbody></tbody>
+</table>
+<h2>JSON payload</h2>
+<pre id="json">running...</pre>
+<script>
+const CASES = [
+  { group: 'Controls' },
+  { id: 'ctl_none', d: null, control: 'must be none', expect: 'none' },
+  { id: 'ctl_plain', d: 'M 0 0 L 10 10', control: 'must be path("M 0 0 L 10 10")', expect: 'path("M 0 0 L 10 10")' },
+
+  { group: 'Numbers (not specified, #321)' },
+  { id: 'num_decimals', d: 'M 0.1 0.25', expect: 'not specified' },
+  { id: 'num_negative_zero', d: 'M -0 0', expect: 'not specified' },
+  { id: 'num_tiny', d: 'M 1e-7 0', expect: 'not specified' },
+  { id: 'num_more_digits_than_float', d: 'M 0.1234567891 123456789', expect: 'not specified' },
+  { id: 'num_trailing_zeros', d: 'M 10.0 20.00', expect: 'WPT serialization.svg drops them in the specified value' },
+  { id: 'num_leading_dot', d: 'M .5 -.5', expect: 'not specified' },
+  { id: 'num_exponent_upper', d: 'M 1E2 0', expect: 'not specified' },
+
+  { group: 'Syntax shortcuts (from the #321 thread)' },
+  { id: 'syn_compact_relative', d: 'm100,200h400V300', expect: 'computed: absolute (WPT)' },
+  { id: 'syn_implicit_after_M', d: 'M5,16 33,44', expect: 'command letter inserted?' },
+  { id: 'syn_implicit_after_m', d: 'm5,16 33,44', expect: 'command letter inserted?' },
+  { id: 'syn_repeated_L', d: 'M 0 0 L 5 16 33 44', expect: 'command letter inserted?' },
+  { id: 'syn_compact_arc_flags', d: 'M 0 0 a10 10 0 1020 0', expect: 'flags 1 0 then 20 0' },
+  { id: 'syn_lowercase_z', d: 'M 0 0 L 10 0 z', expect: 'Z (WPT)' },
+  { id: 'syn_after_z', d: 'M 5 5 l 10 10 z l 1 1', expect: 'computed: L 6 6 (after z the current point is 5 5)' }
+];
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const host = document.getElementById('host');
+
+function measure(c) {
+  const a = document.createElementNS(SVGNS, 'path');
+  if (c.d !== null) a.setAttribute('d', c.d);
+  host.appendChild(a);
+  const attrComputed = getComputedStyle(a).getPropertyValue('d');
+  a.remove();
+  let styleSpecified = '(no style case)', styleComputed = '(no style case)';
+  if (c.d !== null) {
+    const s = document.createElementNS(SVGNS, 'path');
+    s.setAttribute('style', 'd: path("' + c.d + '")');
+    host.appendChild(s);
+    styleSpecified = s.style.getPropertyValue('d') === '' ? '(empty: not parsed)' : s.style.getPropertyValue('d');
+    styleComputed = getComputedStyle(s).getPropertyValue('d');
+    s.remove();
+  }
+  return { attrComputed, styleSpecified, styleComputed };
+}
+function codeFor(c) {
+  if (c.d === null) return '<path/>\ngetComputedStyle(path).getPropertyValue("d")';
+  return '<path d="' + c.d + '"/>\ngetComputedStyle(path).getPropertyValue("d")\n\n<path style=\'d: path("' + c.d + '")\'/>\npath.style.getPropertyValue("d")\ngetComputedStyle(path).getPropertyValue("d")';
+}
+
+document.getElementById('ua').textContent = 'User agent: ' + navigator.userAgent;
+const tbody = document.querySelector('#out tbody');
+const rows = [];
+for (const c of CASES) {
+  const tr = document.createElement('tr');
+  if (c.group) { tr.innerHTML = '<td class="g" colspan="6">' + esc(c.group) + '</td>'; tbody.appendChild(tr); continue; }
+  const m = measure(c);
+  rows.push({ id: c.id, d: c.d, control: c.control || null, expected: c.expect,
+              attr_computed: m.attrComputed, style_specified: m.styleSpecified, style_computed: m.styleComputed });
+  tr.innerHTML = '<td><code>' + esc(c.id) + '</code>' + (c.control ? '<br>control, ' + esc(c.control) : '') + '</td>' +
+    '<td><pre>' + esc(codeFor(c)) + '</pre></td><td><code>' + esc(m.attrComputed) + '</code></td><td><code>' + esc(m.styleSpecified) +
+    '</code></td><td><code>' + esc(m.styleComputed) + '</code></td><td>' + esc(c.expect) + '</td>';
+  tbody.appendChild(tr);
+}
+const by = Object.fromEntries(rows.map((r) => [r.id, r]));
+const supported = CSS.supports('d', 'path("M 0 0")');
+const shortcut = 'd' in document.documentElement.style;
+const controlsPassed = by.ctl_none.attr_computed === 'none' && by.ctl_plain.attr_computed === 'path("M 0 0 L 10 10")';
+const ua = navigator.userAgent;
+const engineHint = /Firefox\//.test(ua) ? 'gecko' : /Chrome\/|Chromium\//.test(ua) ? 'blink' : /AppleWebKit/.test(ua) ? 'webkit' : 'unknown';
+document.getElementById('json').textContent = JSON.stringify({
+  probe: 'probe-321-d-serialization',
+  issue: 'https://github.com/w3c/svgwg/issues/321',
+  date: new Date().toISOString(),
+  user_agent: ua, engine_hint: engineHint, character_set: document.characterSet,
+  css_supports_d: supported, style_d_shortcut: shortcut, controls_passed: controlsPassed,
+  note: 'attr_computed: getComputedStyle of <path d>. style_specified: path.style.d after style="d: path(...)". style_computed: getComputedStyle of that element.',
+  rows: rows
+}, null, 1).replace(/[\u007f-\uffff]/g, (ch) => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
+document.getElementById('status').textContent = 'done. d property supported: ' + supported + '. controls ' + (controlsPassed ? 'passed' : 'FAILED') + '.';
+</script>
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
