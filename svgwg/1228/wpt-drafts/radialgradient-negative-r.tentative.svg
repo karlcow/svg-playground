@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml" width="200" height="200">
+  <title>radialGradient: a negative r takes the initial value (50%)</title>
+  <html:link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#RadialGradientElementRAttribute"/>
+  <html:link rel="help" href="https://github.com/w3c/svgwg/issues/1228"/>
+  <html:link rel="match" href="radialgradient-negative-r-ref.svg"/>
+  <radialGradient id="g" r="-10">
+    <stop offset="0" stop-color="gold"/>
+    <stop offset="1" stop-color="navy"/>
+  </radialGradient>
+  <rect width="200" height="200" fill="url(#g)"/>
+</svg>

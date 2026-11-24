@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: radialGradient negative r reftests (svgwg#1228)</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#RadialGradientElementRAttribute">
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/pservers.html#PaintServerTemplates">
+<!--
+  svgwg#1228. Written 2026-11-24.
+
+  Runs the two draft WPT reftests for negative r on radialGradient the way a
+  reftest harness does: draw the test and its reference, compare the pixels.
+    radialgradient-negative-r.tentative.svg       r="-10" must look like r unset (50%)
+    radialgradient-href-negative-r.tentative.svg  template r="0.25", referencing r="-10",
+                                                  must look like r="0.25"
+  Both encode a proposal that is not resolved yet, hence .tentative.
+
+  Each SVG file is loaded in an img through a blob URL, drawn into a 200 by 200
+  canvas, and the two canvases are compared. "match" means no pixel differs by
+  more than TOLERANCE in any channel (gradients can dither by a step or two).
+
+  Controls:
+    ctl_same      the reference against itself: MUST match.
+    ctl_differs   r unset against r="0.25": MUST differ.
+  Sanity row (not a control): negative fr against fr unset. WPT
+  svg/pservers/reftests/radialgradient-basic-003.svg expects these to look the
+  same and passes in Chrome, Firefox and Safari on wpt.fyi (2026-11-23).
+
+  Predictions, written before the run, from the 2026-10-27 probe runs in the
+  issue description: Firefox matches both tests; Safari (first stop) and Chrome (last
+  stop) differ on both.
+
+  The markup shown beside each row is the file content the row runs.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 90rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ pre { background: #f5f5f5; padding: .5rem; font-size: 10.5px; margin: 0; white-space: pre; }
+ .pair { display: flex; gap: 6px; }
+ .pair figure { margin: 0; font-size: 10px; text-align: center; }
+ .pair img { width: 100px; height: 100px; border: 1px solid #999; display: block; }
+ .match { color: #060; font-weight: 700; } .differs { color: #a00; font-weight: 700; } .err { color: #a60; font-weight: 700; }
+ #ua { font-family: ui-monospace, monospace; font-size: 11px; }
+</style>
+
+<h1>radialGradient: negative <code>r</code> reftests (svgwg#1228)</h1>
+<p id="ua"></p>
+<p id="status">running...</p>
+<table id="out">
+ <thead><tr><th>case</th><th>test file</th><th>reference file</th><th>test, reference</th><th>result</th><th>expected</th><th>prediction (2026-10-27 runs)</th></tr></thead>
+ <tbody></tbody>
+</table>
+<h2>JSON payload</h2>
+<pre id="json">running...</pre>
+
+<script>
+const FILES = {
+ "radialgradient-negative-r.tentative.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:html=\"http://www.w3.org/1999/xhtml\" width=\"200\" height=\"200\">\n  <title>radialGradient: a negative r takes the initial value (50%)</title>\n  <html:link rel=\"help\" href=\"https://w3c.github.io/svgwg/svg2-draft/pservers.html#RadialGradientElementRAttribute\"/>\n  <html:link rel=\"help\" href=\"https://github.com/w3c/svgwg/issues/1228\"/>\n  <html:link rel=\"match\" href=\"radialgradient-negative-r-ref.svg\"/>\n  <radialGradient id=\"g\" r=\"-10\">\n    <stop offset=\"0\" stop-color=\"gold\"/>\n    <stop offset=\"1\" stop-color=\"navy\"/>\n  </radialGradient>\n  <rect width=\"200\" height=\"200\" fill=\"url(#g)\"/>\n</svg>",
+ "radialgradient-negative-r-ref.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"200\">\n  <radialGradient id=\"g\">\n    <stop offset=\"0\" stop-color=\"gold\"/>\n    <stop offset=\"1\" stop-color=\"navy\"/>\n  </radialGradient>\n  <rect width=\"200\" height=\"200\" fill=\"url(#g)\"/>\n</svg>",
+ "radialgradient-href-negative-r.tentative.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:html=\"http://www.w3.org/1999/xhtml\" width=\"200\" height=\"200\">\n  <title>radialGradient: a negative r on the referencing gradient does not hide the template's valid r</title>\n  <html:link rel=\"help\" href=\"https://w3c.github.io/svgwg/svg2-draft/pservers.html#PaintServerTemplates\"/>\n  <html:link rel=\"help\" href=\"https://github.com/w3c/svgwg/issues/1228\"/>\n  <html:link rel=\"match\" href=\"radialgradient-href-negative-r-ref.svg\"/>\n  <radialGradient id=\"a\" r=\"0.25\">\n    <stop offset=\"0\" stop-color=\"gold\"/>\n    <stop offset=\"1\" stop-color=\"navy\"/>\n  </radialGradient>\n  <radialGradient id=\"g\" href=\"#a\" r=\"-10\"/>\n  <rect width=\"200\" height=\"200\" fill=\"url(#g)\"/>\n</svg>",
+ "radialgradient-href-negative-r-ref.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"200\">\n  <radialGradient id=\"g\" r=\"0.25\">\n    <stop offset=\"0\" stop-color=\"gold\"/>\n    <stop offset=\"1\" stop-color=\"navy\"/>\n  </radialGradient>\n  <rect width=\"200\" height=\"200\" fill=\"url(#g)\"/>\n</svg>",
+ "negative-fr.svg (sanity, like WPT radialgradient-basic-003)": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"200\">\n  <radialGradient id=\"g\" fr=\"-0.1\">\n    <stop offset=\"0\" stop-color=\"gold\"/>\n    <stop offset=\"1\" stop-color=\"navy\"/>\n  </radialGradient>\n  <rect width=\"200\" height=\"200\" fill=\"url(#g)\"/>\n</svg>"
+};
+const TOLERANCE = 4;
+
+const CASES = [
+  { id: 'ctl_same', test: 'radialgradient-negative-r-ref.svg', ref: 'radialgradient-negative-r-ref.svg',
+    expect: 'match', control: 'must match', predict: 'all: match' },
+  { id: 'ctl_differs', test: 'radialgradient-negative-r-ref.svg', ref: 'radialgradient-href-negative-r-ref.svg',
+    expect: 'differs', control: 'must differ', predict: 'all: differs' },
+  { id: 'sanity_negative_fr', test: 'negative-fr.svg (sanity, like WPT radialgradient-basic-003)', ref: 'radialgradient-negative-r-ref.svg',
+    expect: 'match', predict: 'all: match (WPT basic-003 passes everywhere)' },
+  { id: 'negative_r', test: 'radialgradient-negative-r.tentative.svg', ref: 'radialgradient-negative-r-ref.svg',
+    expect: 'match', predict: 'Firefox: match. Safari, Chrome: differs' },
+  { id: 'href_negative_r', test: 'radialgradient-href-negative-r.tentative.svg', ref: 'radialgradient-href-negative-r-ref.svg',
+    expect: 'match', predict: 'Firefox: match. Safari, Chrome: differs' }
+];
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+async function draw(name, holder) {
+  const img = document.createElement('img');
+  const fig = document.createElement('figure');
+  fig.append(img, document.createTextNode(name.startsWith('negative-fr') ? 'negative-fr.svg' : name));
+  holder.appendChild(fig);
+  const url = URL.createObjectURL(new Blob([FILES[name]], { type: 'image/svg+xml' }));
+  const ok = await new Promise((r) => { img.onload = () => r(true); img.onerror = () => r(false); img.src = url; });
+  if (!ok) return { error: 'load failed: ' + name };
+  await sleep(60);
+  const c = document.createElement('canvas');
+  c.width = c.height = 200;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, 200, 200);
+  try { return { data: ctx.getImageData(0, 0, 200, 200).data }; }
+  catch (e) { return { error: 'cannot read pixels (' + e.name + ')' }; }
+}
+
+function compare(a, b) {
+  let differing = 0, maxDiff = 0;
+  for (let i = 0; i < a.length; i += 4) {
+    let d = 0;
+    for (let k = 0; k < 4; k++) d = Math.max(d, Math.abs(a[i + k] - b[i + k]));
+    if (d > maxDiff) maxDiff = d;
+    if (d > TOLERANCE) differing++;
+  }
+  return { differing_pixels: differing, max_channel_diff: maxDiff };
+}
+const centre = (d) => { const i = (100 * 200 + 100) * 4; return d[i] + ',' + d[i + 1] + ',' + d[i + 2]; };
+const corner = (d) => { const i = (199 * 200 + 199) * 4; return d[i] + ',' + d[i + 1] + ',' + d[i + 2]; };
+
+document.getElementById('ua').textContent = 'User agent: ' + navigator.userAgent;
+
+(async () => {
+  const tbody = document.querySelector('#out tbody');
+  const rows = [];
+  for (const c of CASES) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td><code>' + c.id + '</code>' + (c.control ? '<br>control, ' + c.control : '') + '</td>' +
+      '<td><pre>' + esc(FILES[c.test]) + '</pre></td><td><pre>' + esc(FILES[c.ref]) + '</pre></td>' +
+      '<td><div class="pair"></div></td><td>...</td><td>' + c.expect + '</td><td>' + esc(c.predict) + '</td>';
+    tbody.appendChild(tr);
+    const pair = tr.querySelector('.pair');
+    const t = await draw(c.test, pair);
+    const r = await draw(c.ref, pair);
+    let row = { id: c.id, test: c.test, reference: c.ref, expected: c.expect, control: c.control || null, prediction: c.predict };
+    if (t.error || r.error) {
+      row.result = t.error || r.error;
+      tr.children[4].innerHTML = '<span class="err">' + esc(row.result) + '</span>';
+    } else {
+      const cmp = compare(t.data, r.data);
+      row.result = cmp.differing_pixels === 0 ? 'match' : 'differs';
+      Object.assign(row, cmp, { test_centre: centre(t.data), test_corner: corner(t.data), ref_centre: centre(r.data), ref_corner: corner(r.data) });
+      tr.children[4].innerHTML = '<span class="' + row.result + '">' + row.result + '</span><br>' +
+        cmp.differing_pixels + ' px over ' + TOLERANCE + ', max ' + cmp.max_channel_diff +
+        '<br>centre ' + row.test_centre + ' / ' + row.ref_centre + '<br>corner ' + row.test_corner + ' / ' + row.ref_corner;
+    }
+    rows.push(row);
+  }
+  const by = Object.fromEntries(rows.map((r) => [r.id, r.result]));
+  const controlsPassed = by.ctl_same === 'match' && by.ctl_differs === 'differs';
+  const ua = navigator.userAgent;
+  const engineHint = /Firefox\//.test(ua) ? 'gecko' : /Chrome\/|Chromium\//.test(ua) ? 'blink' : /AppleWebKit/.test(ua) ? 'webkit' : 'unknown';
+  const payload = {
+    probe: 'probe-1228-reftests',
+    issue: 'https://github.com/w3c/svgwg/issues/1228',
+    date: new Date().toISOString(),
+    user_agent: ua, engine_hint: engineHint, character_set: document.characterSet,
+    controls_passed: controlsPassed, tolerance: TOLERANCE,
+    note: 'Pixels in r,g,b. centre is (100,100), corner is (199,199). gold is 255,215,0 and navy 0,0,128.',
+    rows: rows
+  };
+  document.getElementById('json').textContent = JSON.stringify(payload, null, 1)
+    .replace(/[\u007f-\uffff]/g, (ch) => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
+  document.getElementById('status').textContent = 'done. controls ' + (controlsPassed ? 'passed' : 'FAILED') + '.';
+})();
+</script>
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
