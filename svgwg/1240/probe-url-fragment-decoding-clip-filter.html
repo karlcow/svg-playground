@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: percent-encoded fragments in clip-path, filter and mask references</title>
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/linking.html#processingURL-target">
+<link rel="help" href="https://github.com/w3c/svgwg/issues/1240">
+<!--
+  For svgwg#1240 (2026-11-11). An earlier probe (2026-10-19) found that
+  STP 254 did not decode a percent-encoded fragment for clip-path and
+  filter. WPT
+  svg/pservers/reftests/percent-encoded-fragment-refs.html passes in Safari 27.2,
+  but it only checks that the computed value contains url(), which is true
+  whether or not the reference resolves, so it cannot see this.
+
+  Question: does the reference reach the element when the fragment is
+  percent-encoded, for clip-path, filter and mask, written as a presentation
+  attribute (as in the WPT test) and in a style attribute (as in the October
+  probe)?
+
+  Measured A: each case is a standalone SVG drawn through <img> into a canvas,
+  pixels hashed. A reference "resolves" when its hash equals the plain-id case
+  and differs from the missing-id case.
+  Measured B: inline SVG in this page, clip-path only, through hit-testing
+  (document.elementFromPoint): the clip keeps the left half, so a point in the
+  right half hits the rect only if the clip did not apply.
+
+  Controls: plain vs plain_again (deterministic), plain vs plain_B (the look
+  changes, so the measurement sees which target was reached), plain vs missing
+  (a broken reference is visible), fill (decodes in every engine since April).
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 84rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 3px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ .PASS { color: #060; font-weight: 700; }
+ .FAIL { color: #a00; font-weight: 700; }
+ pre { background: #f5f5f5; padding: .6rem; overflow-x: auto; font-size: 11px; margin: 0; }
+ pre.markup { background: #fafafa; border: 1px solid #ddd; white-space: pre-wrap; max-width: 40rem; }
+ canvas { border: 1px solid #ccc; width: 64px; height: 64px; image-rendering: pixelated; }
+ #inline svg { border: 1px solid #ccc; }
+</style>
+
+<h1>Percent-encoded fragments: clip-path, filter, mask</h1>
+<p id="ua"></p>
+<p id="status">running...</p>
+<h2>A. SVG drawn as an image</h2>
+<table id="out"><thead><tr><th>kind</th><th>user element (the reference)</th><th>plain</th><th>missing</th><th>enc_ascii <code>#%74gt</code></th><th>enc_space <code>#my%20clip</code></th><th>utf8_enc <code>#%C3%A9</code></th><th>verdict</th></tr></thead><tbody></tbody></table>
+<h2>B. Inline SVG, clip-path, hit-testing</h2>
+<div id="inline"></div>
+<table id="out2"><thead><tr><th>case</th><th>markup</th><th>hit at (48, 32)</th><th>clip applied</th></tr></thead><tbody></tbody></table>
+<h2>JSON payload</h2>
+<pre id="json">…</pre>
+
+<script>
+const SIZE = 64;
+const E_ACUTE = '\u00e9';
+
+// target(id, look): the element that defines the effect. look A and B differ.
+// attr / style: the element carrying the reference, as a presentation attribute or in style.
+const KINDS = {
+  fill_style: {
+    target: (id, v) => `<linearGradient id="${id}"><stop stop-color="${v === 'A' ? 'red' : 'blue'}"/></linearGradient>`,
+    user: (ref) => `<rect width="64" height="64" style="fill:url(${ref})"/>`, control: true },
+  clip_path_attr: {
+    target: (id, v) => `<clipPath id="${id}"><rect x="${v === 'A' ? 0 : 32}" width="32" height="64"/></clipPath>`,
+    user: (ref) => `<rect width="64" height="64" fill="blue" clip-path="url(${ref})"/>` },
+  clip_path_style: {
+    target: (id, v) => `<clipPath id="${id}"><rect x="${v === 'A' ? 0 : 32}" width="32" height="64"/></clipPath>`,
+    user: (ref) => `<rect width="64" height="64" fill="blue" style="clip-path:url(${ref})"/>` },
+  filter_attr: {
+    target: (id, v) => `<filter id="${id}"><feFlood flood-color="${v === 'A' ? 'lime' : 'yellow'}"/></filter>`,
+    user: (ref) => `<rect x="16" y="16" width="32" height="32" fill="blue" filter="url(${ref})"/>` },
+  filter_style: {
+    target: (id, v) => `<filter id="${id}"><feFlood flood-color="${v === 'A' ? 'lime' : 'yellow'}"/></filter>`,
+    user: (ref) => `<rect x="16" y="16" width="32" height="32" fill="blue" style="filter:url(${ref})"/>` },
+  mask_attr: {
+    target: (id, v) => `<mask id="${id}"><rect x="${v === 'A' ? 0 : 32}" width="32" height="64" fill="white"/></mask>`,
+    user: (ref) => `<rect width="64" height="64" fill="blue" mask="url(${ref})"/>` },
+  mask_style: {
+    target: (id, v) => `<mask id="${id}"><rect x="${v === 'A' ? 0 : 32}" width="32" height="64" fill="white"/></mask>`,
+    user: (ref) => `<rect width="64" height="64" fill="blue" style="mask:url(${ref})"/>` },
+};
+
+const VARIANTS = {
+  plain:       { targets: [['tgt', 'A']], ref: '#tgt' },
+  plain_again: { targets: [['tgt', 'A']], ref: '#tgt' },
+  plain_B:     { targets: [['tgt', 'B']], ref: '#tgt' },
+  missing:     { targets: [['tgt', 'A']], ref: '#nope' },
+  enc_ascii:   { targets: [['tgt', 'A']], ref: '#%74gt' },
+  enc_space:   { targets: [['my clip', 'A']], ref: '#my%20clip' },
+  utf8_enc:    { targets: [[E_ACUTE, 'A']], ref: '#%C3%A9' },
+};
+
+const build = (kind, v) => v.targets.map(([id, look]) => KINDS[kind].target(id, look)).join('') + KINDS[kind].user(v.ref);
+const svgFor = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">${inner}</svg>`;
+
+function hashOf(d) {
+  let h = 0x811c9dc5, nonBlank = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] > 0) nonBlank++;
+    for (let c = 0; c < 4; c++) { h ^= d[i + c]; h = Math.imul(h, 0x01000193) >>> 0; }
+  }
+  return { hash: h.toString(16).padStart(8, '0'), nonBlank };
+}
+
+function render(svgText) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml' }));
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = c.height = SIZE;
+      c.getContext('2d').drawImage(img, 0, 0, SIZE, SIZE);
+      URL.revokeObjectURL(url);
+      try { resolve({ canvas: c, ...hashOf(c.getContext('2d').getImageData(0, 0, SIZE, SIZE).data) }); }
+      catch (e) { resolve({ canvas: c, hash: 'error:' + e.name }); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve({ canvas: null, hash: 'error:load' }); };
+    img.src = url;
+  });
+}
+
+const pre = (t) => { const p = document.createElement('pre'); p.className = 'markup'; p.textContent = t; return p; };
+const ua = navigator.userAgent;
+document.getElementById('ua').textContent = 'User agent: ' + ua;
+
+(async () => {
+  const rows = {};
+  let controlsPassed = true;
+  for (const kind of Object.keys(KINDS)) {
+    const hashes = {}, canvases = {};
+    for (const [vname, v] of Object.entries(VARIANTS)) {
+      const r = await render(svgFor(build(kind, v)));
+      hashes[vname] = r.hash; canvases[vname] = r.canvas;
+    }
+    const det = hashes.plain === hashes.plain_again;
+    const sees = hashes.plain !== hashes.plain_B;
+    const broken = hashes.plain !== hashes.missing;
+    const resolves = (n) => hashes[n] === hashes.plain && hashes[n] !== hashes.missing;
+    const row = { hashes, control_deterministic: det, control_sees_target: sees, control_missing_visible: broken,
+      resolves_enc_ascii: resolves('enc_ascii'), resolves_enc_space: resolves('enc_space'), resolves_utf8_enc: resolves('utf8_enc'),
+      markup_example: KINDS[kind].user('#%74gt') };
+    if (!(det && sees && broken)) controlsPassed = false;
+    if (KINDS[kind].control && !row.resolves_enc_ascii) controlsPassed = false;
+    rows[kind] = row;
+    const tr = document.createElement('tr');
+    const td = (x, cls) => { const t = document.createElement('td'); if (cls) t.className = cls; if (typeof x === 'string') t.textContent = x; else if (x) t.append(x); tr.append(t); };
+    td(kind + (KINDS[kind].control ? ' (control)' : ''));
+    td(pre(KINDS[kind].user('#%74gt')));
+    for (const n of ['plain', 'missing']) td(canvases[n]);
+    for (const n of ['enc_ascii', 'enc_space', 'utf8_enc']) {
+      const t = document.createElement('div'); if (canvases[n]) t.append(canvases[n]);
+      t.append(document.createElement('br'), document.createTextNode(resolves(n) ? 'resolves' : 'not resolved'));
+      td(t, resolves(n) ? 'PASS' : 'FAIL');
+    }
+    td(det && sees && broken ? 'controls ok' : 'controls FAILED', det && sees && broken ? 'PASS' : 'FAIL');
+    document.querySelector('#out tbody').append(tr);
+  }
+
+  // B. Inline clip-path, hit-testing. Each case gets its own svg with unique ids.
+  const inline = {};
+  const host = document.getElementById('inline');
+  const CASES = { plain: ['c-plain', '#c-plain'], missing: ['c-miss', '#nope-inline'], enc_ascii: ['c-enc', '#%63-enc'], enc_space: ['c sp', '#c%20sp'] };
+  for (const [name, [id, ref]] of Object.entries(CASES)) {
+    const markup = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">` +
+      `<clipPath id="${id}"><rect width="32" height="64"/></clipPath>` +
+      `<rect id="r-${name}" width="64" height="64" fill="blue" clip-path="url(${ref})"/></svg>`;
+    const wrap = document.createElement('span'); wrap.innerHTML = markup; host.append(wrap);
+    await new Promise((r) => setTimeout(r, 50));
+    // elementFromPoint only sees points inside the viewport, so bring the svg into view first.
+    const svg = wrap.firstElementChild; svg.scrollIntoView({ block: 'center' }); await new Promise((r) => setTimeout(r, 30));
+    const box = svg.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.left + 48, box.top + 32);
+    const hitRect = hit && hit.id === 'r-' + name;
+    inline[name] = { hit_rect_right_half: !!hitRect, hit_element: hit ? (hit.id || hit.tagName) : null, markup };
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td></td><td></td><td></td><td></td>';
+    tr.children[0].textContent = name; tr.children[1].append(pre(markup));
+    tr.children[2].textContent = inline[name].hit_element;
+    tr.children[3].textContent = hitRect ? 'no (right half hit)' : 'yes (right half not hit)';
+    document.querySelector('#out2 tbody').append(tr);
+  }
+  const inlineControls = !inline.plain.hit_rect_right_half && inline.missing.hit_rect_right_half !== inline.plain.hit_rect_right_half;
+  inline.controls_ok = inlineControls;
+  inline.resolves_enc_ascii = inlineControls && inline.enc_ascii.hit_rect_right_half === inline.plain.hit_rect_right_half;
+  inline.resolves_enc_space = inlineControls && inline.enc_space.hit_rect_right_half === inline.plain.hit_rect_right_half;
+
+  const payload = {
+    probe: 'probe-url-fragment-decoding-clip-filter',
+    date: new Date().toISOString(),
+    user_agent: ua,
+    engine_hint: /Firefox\//.test(ua) ? 'gecko' : /Chrome\/|Chromium\//.test(ua) ? 'blink' : /AppleWebKit/.test(ua) ? 'webkit' : 'unknown',
+    character_set: document.characterSet,
+    controls_passed: controlsPassed,
+    summary: Object.fromEntries(Object.entries(rows).map(([k, r]) => [k, { enc_ascii: r.resolves_enc_ascii, enc_space: r.resolves_enc_space, utf8_enc: r.resolves_utf8_enc }])),
+    inline_clip_path: { controls_ok: inline.controls_ok, enc_ascii: inline.resolves_enc_ascii, enc_space: inline.resolves_enc_space },
+    rows, inline,
+  };
+  document.getElementById('json').textContent = JSON.stringify(payload, null, 1)
+    .replace(/[\u007f-\uffff]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+  const st = document.getElementById('status');
+  st.textContent = 'done. Controls ' + (controlsPassed ? 'passed' : 'FAILED') + '; inline controls ' + (inlineControls ? 'passed' : 'FAILED') + '.';
+  st.className = controlsPassed && inlineControls ? 'PASS' : 'FAIL';
+})();
+</script>
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
+</html>
