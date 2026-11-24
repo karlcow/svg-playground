@@ -36,6 +36,12 @@
                       else the font did not load or has no ligature: nothing counts).
     ctl_same_as_ref   <text>fi</text> again MUST read "ligature".
 
+  WebKit warning: before WebKit PR 80809 and 80810 (2026-11-17 and 19, after
+  Safari Technology Preview 257), WebKit's text DOM methods measure each
+  character alone, so getComputedTextLength() reads "two glyphs" even where
+  WebKit draws the ligature. For those builds, read the drawn column, not the
+  result column.
+
   Expected, from the CSS rules (written before any run). "SVG only" rows have
   no CSS rule; SVG 2 keeps its text chunk bullet for x and y.
 -->
