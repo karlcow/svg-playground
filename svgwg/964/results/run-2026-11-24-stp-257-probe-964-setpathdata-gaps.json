@@ -1,0 +1,220 @@
+{
+ "probe": "probe-964-setpathdata-gaps",
+ "issue": "https://github.com/w3c/svgwg/issues/964",
+ "date": "2026-11-24T07:01:02.623Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "api_present": false,
+ "controls_passed": false,
+ "note": "Each case starts from d=\"M 99 99\". thrown is the exception name or null. d_after null means the attribute was removed.",
+ "rows": [
+  {
+   "id": "ctl_valid_changes",
+   "control": "must change",
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"L\", values: [10, 10] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "d = \"M 0 0 L 10 10\""
+  },
+  {
+   "id": "ctl_roundtrip",
+   "control": "must not change",
+   "code": "path.setPathData(path.getPathData())",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "d unchanged (\"M 99 99\")"
+  },
+  {
+   "id": "ctl_unknown_letter",
+   "control": "known from WPT",
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"X\", values: [] }, { type: \"L\", values: [1, 1] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "d = \"M 0 0\""
+  },
+  {
+   "id": "g1_bearing_B",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"B\", values: [45] }, { type: \"L\", values: [10, 10] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "module: kept. #964 patch: dropped"
+  },
+  {
+   "id": "g1_bearing_b",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"b\", values: [45] }, { type: \"L\", values: [10, 10] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "module: kept. #964 patch: dropped"
+  },
+  {
+   "id": "g1_catmull_R",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"R\", values: [10, 10, 20, 0, 30, 10] }, { type: \"L\", values: [40, 40] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "module: kept. #964 patch: dropped"
+  },
+  {
+   "id": "g1_markup_B",
+   "control": null,
+   "code": "path.setAttribute(\"d\", \"M 0 0 B 45 L 10 10\")",
+   "thrown": null,
+   "d_after": "M 0 0 B 45 L 10 10",
+   "getPathData_after": "no API",
+   "expected": "markup control: the d parser stops at B"
+  },
+  {
+   "id": "g2_missing_values",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"L\" }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_missing_type",
+   "control": null,
+   "code": "path.setPathData([{ values: [0, 0] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_values_number",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: 5 }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_argument_null",
+   "control": null,
+   "code": "path.setPathData(null)",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_argument_object",
+   "control": null,
+   "code": "path.setPathData({})",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_values_symbol",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [Symbol(), 0] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_values_strings",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [\"10\", \"20\"] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "no throw, d = \"M 10 20\""
+  },
+  {
+   "id": "g2_values_not_numbers",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [\"a\", 0] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "no throw, \"a\" is NaN, first segment invalid, d removed"
+  },
+  {
+   "id": "g3_decimals",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0.1, 0.25] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "not specified"
+  },
+  {
+   "id": "g3_tiny",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [1e-7, 0] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "not specified"
+  },
+  {
+   "id": "g3_negative_zero",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [-0, 0] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "not specified"
+  },
+  {
+   "id": "g3_more_digits_than_float",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0.1234567891, 123456789] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "not specified"
+  },
+  {
+   "id": "g3_too_large_for_float",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [1e39, 0] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "float conversion gives Infinity, so truncated: d removed"
+  },
+  {
+   "id": "g4_arc_negative_rx",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"A\", values: [-10, 10, 0, 0, 1, 20, 20] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "not specified"
+  },
+  {
+   "id": "g4_arc_zero_radii",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"A\", values: [0, 0, 0, 0, 1, 20, 20] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "not specified"
+  },
+  {
+   "id": "g5_after_close",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"L\", values: [10, 10] }, { type: \"Z\", values: [] }, { type: \"L\", values: [20, 20] }])",
+   "thrown": "no API",
+   "d_after": "M 99 99",
+   "getPathData_after": "no API",
+   "expected": "valid in the grammar: kept"
+  }
+ ]
+}

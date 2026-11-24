@@ -1,0 +1,220 @@
+{
+ "probe": "probe-964-setpathdata-gaps",
+ "issue": "https://github.com/w3c/svgwg/issues/964",
+ "date": "2026-11-24T07:05:00.712Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/160.0.0.0 Safari/537.36",
+ "engine_hint": "blink",
+ "character_set": "UTF-8",
+ "api_present": true,
+ "controls_passed": true,
+ "note": "Each case starts from d=\"M 99 99\". thrown is the exception name or null. d_after null means the attribute was removed.",
+ "rows": [
+  {
+   "id": "ctl_valid_changes",
+   "control": "must change",
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"L\", values: [10, 10] }])",
+   "thrown": null,
+   "d_after": "M 0 0 L 10 10",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]},{\"type\":\"L\",\"values\":[10,10]}]",
+   "expected": "d = \"M 0 0 L 10 10\""
+  },
+  {
+   "id": "ctl_roundtrip",
+   "control": "must not change",
+   "code": "path.setPathData(path.getPathData())",
+   "thrown": null,
+   "d_after": "M 99 99",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[99,99]}]",
+   "expected": "d unchanged (\"M 99 99\")"
+  },
+  {
+   "id": "ctl_unknown_letter",
+   "control": "known from WPT",
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"X\", values: [] }, { type: \"L\", values: [1, 1] }])",
+   "thrown": null,
+   "d_after": "M 0 0",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]}]",
+   "expected": "d = \"M 0 0\""
+  },
+  {
+   "id": "g1_bearing_B",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"B\", values: [45] }, { type: \"L\", values: [10, 10] }])",
+   "thrown": null,
+   "d_after": "M 0 0",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]}]",
+   "expected": "module: kept. #964 patch: dropped"
+  },
+  {
+   "id": "g1_bearing_b",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"b\", values: [45] }, { type: \"L\", values: [10, 10] }])",
+   "thrown": null,
+   "d_after": "M 0 0",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]}]",
+   "expected": "module: kept. #964 patch: dropped"
+  },
+  {
+   "id": "g1_catmull_R",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"R\", values: [10, 10, 20, 0, 30, 10] }, { type: \"L\", values: [40, 40] }])",
+   "thrown": null,
+   "d_after": "M 0 0",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]}]",
+   "expected": "module: kept. #964 patch: dropped"
+  },
+  {
+   "id": "g1_markup_B",
+   "control": null,
+   "code": "path.setAttribute(\"d\", \"M 0 0 B 45 L 10 10\")",
+   "thrown": null,
+   "d_after": "M 0 0 B 45 L 10 10",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]}]",
+   "expected": "markup control: the d parser stops at B"
+  },
+  {
+   "id": "g2_missing_values",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"L\" }])",
+   "thrown": "TypeError",
+   "d_after": "M 99 99",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[99,99]}]",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_missing_type",
+   "control": null,
+   "code": "path.setPathData([{ values: [0, 0] }])",
+   "thrown": "TypeError",
+   "d_after": "M 99 99",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[99,99]}]",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_values_number",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: 5 }])",
+   "thrown": "TypeError",
+   "d_after": "M 99 99",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[99,99]}]",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_argument_null",
+   "control": null,
+   "code": "path.setPathData(null)",
+   "thrown": "TypeError",
+   "d_after": "M 99 99",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[99,99]}]",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_argument_object",
+   "control": null,
+   "code": "path.setPathData({})",
+   "thrown": "TypeError",
+   "d_after": "M 99 99",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[99,99]}]",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_values_symbol",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [Symbol(), 0] }])",
+   "thrown": "TypeError",
+   "d_after": "M 99 99",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[99,99]}]",
+   "expected": "TypeError, d unchanged"
+  },
+  {
+   "id": "g2_values_strings",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [\"10\", \"20\"] }])",
+   "thrown": null,
+   "d_after": "M 10 20",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[10,20]}]",
+   "expected": "no throw, d = \"M 10 20\""
+  },
+  {
+   "id": "g2_values_not_numbers",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [\"a\", 0] }])",
+   "thrown": null,
+   "d_after": null,
+   "getPathData_after": "[]",
+   "expected": "no throw, \"a\" is NaN, first segment invalid, d removed"
+  },
+  {
+   "id": "g3_decimals",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0.1, 0.25] }])",
+   "thrown": null,
+   "d_after": "M 0.1 0.25",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0.10000000149011612,0.25]}]",
+   "expected": "not specified"
+  },
+  {
+   "id": "g3_tiny",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [1e-7, 0] }])",
+   "thrown": null,
+   "d_after": "M 1.00000e-7 0",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[1.0000000116860974e-7,0]}]",
+   "expected": "not specified"
+  },
+  {
+   "id": "g3_negative_zero",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [-0, 0] }])",
+   "thrown": null,
+   "d_after": "M 0 0",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]}]",
+   "expected": "not specified"
+  },
+  {
+   "id": "g3_more_digits_than_float",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0.1234567891, 123456789] }])",
+   "thrown": null,
+   "d_after": "M 0.123457 1.23457e+8",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0.12345700711011887,123457000]}]",
+   "expected": "not specified"
+  },
+  {
+   "id": "g3_too_large_for_float",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [1e39, 0] }])",
+   "thrown": null,
+   "d_after": null,
+   "getPathData_after": "[]",
+   "expected": "float conversion gives Infinity, so truncated: d removed"
+  },
+  {
+   "id": "g4_arc_negative_rx",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"A\", values: [-10, 10, 0, 0, 1, 20, 20] }])",
+   "thrown": null,
+   "d_after": "M 0 0 A -10 10 0 0 1 20 20",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]},{\"type\":\"A\",\"values\":[-10,10,0,0,1,20,20]}]",
+   "expected": "not specified"
+  },
+  {
+   "id": "g4_arc_zero_radii",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"A\", values: [0, 0, 0, 0, 1, 20, 20] }])",
+   "thrown": null,
+   "d_after": "M 0 0 A 0 0 0 0 1 20 20",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]},{\"type\":\"A\",\"values\":[0,0,0,0,1,20,20]}]",
+   "expected": "not specified"
+  },
+  {
+   "id": "g5_after_close",
+   "control": null,
+   "code": "path.setPathData([{ type: \"M\", values: [0, 0] }, { type: \"L\", values: [10, 10] }, { type: \"Z\", values: [] }, { type: \"L\", values: [20, 20] }])",
+   "thrown": null,
+   "d_after": "M 0 0 L 10 10 Z L 20 20",
+   "getPathData_after": "[{\"type\":\"M\",\"values\":[0,0]},{\"type\":\"L\",\"values\":[10,10]},{\"type\":\"Z\",\"values\":[]},{\"type\":\"L\",\"values\":[20,20]}]",
+   "expected": "valid in the grammar: kept"
+  }
+ ]
+}
