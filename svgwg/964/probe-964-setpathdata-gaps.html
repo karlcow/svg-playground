@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: setPathData() cases no WPT test covers (svgwg#964)</title>
+<link rel="help" href="https://w3c.github.io/svgwg/specs/paths/#__svg__SVGPathData__setPathData">
+<!--
+  svgwg#964. Written 2026-11-24.
+
+  WPT svg/path/interfaces/setPathData-*.html covers invalid content (unknown
+  letter, arity, NaN, Infinity, Z with values, first segment not a moveto, arc
+  flags), every valid letter, the d text for small integers, empty input,
+  MutationObserver, plain objects. This probe measures five things none of
+  those tests check:
+
+    1. bearing B/b and Catmull-Rom R/r: in the SVG Paths module grammar, in no
+       engine's path parser. Kept (module) or dropped like an unknown letter?
+    2. Web IDL conversion: missing required members, values that are not a
+       sequence, strings, a Symbol. Thrown before any step, d unchanged?
+    3. how numbers are written into d: decimals, 1e-7, -0 coordinates, more
+       digits than a float keeps, a value too large for a float.
+    4. arc radii that are negative or zero.
+    5. a segment after Z without a new moveto.
+
+  Every case starts from a path with d="M 99 99", calls the function shown in
+  its row, and records: what was thrown (if anything), the d attribute after,
+  and getPathData() after. The code shown is the function's own source.
+
+  Controls:
+    ctl_valid_changes   a valid list MUST change d to "M 0 0 L 10 10".
+    ctl_roundtrip       setPathData(getPathData()) MUST NOT change d.
+    ctl_unknown_letter  X after M gives d="M 0 0", as WPT already expects
+                        (22/22 in Chrome and Firefox on wpt.fyi).
+  If the API is missing (WebKit today), every row reads "no API".
+
+  Expectations written before the run, from the spec text only (nobody has
+  read engine source for these):
+    group 2: TypeError, d stays "M 99 99" (Web IDL converts the argument
+             before the method steps run; "10" converts to 10, "a" to NaN).
+    group 1: module grammar says valid (kept); the steps proposed in svgwg#964 say dropped.
+    groups 3, 4, 5: not specified (#321 for number format).
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 90rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ pre { background: #f5f5f5; padding: .4rem; font-size: 11px; margin: 0; white-space: pre-wrap; }
+ .g { background: #f0f0f0; font-weight: 700; }
+ .threw { color: #a00; font-weight: 700; } .ok { color: #060; }
+ #ua { font-family: ui-monospace, monospace; font-size: 11px; }
+</style>
+
+<h1><code>setPathData()</code>: cases no WPT test covers (svgwg#964)</h1>
+<p id="ua"></p>
+<p id="status">running...</p>
+<p>Every case starts from <code>&lt;path d="M 99 99"/&gt;</code> and calls the code in its row.</p>
+<table id="out">
+ <thead><tr><th>case</th><th>code</th><th>thrown</th><th><code>d</code> after</th><th><code>getPathData()</code> after</th><th>expected (spec text)</th></tr></thead>
+ <tbody></tbody>
+</table>
+<h2>JSON payload</h2>
+<pre id="json">running...</pre>
+
+<script>
+const CASES = [
+  { group: 'Controls' },
+  { id: 'ctl_valid_changes', control: 'must change', expect: 'd = "M 0 0 L 10 10"',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "L", values: [10, 10] }]) },
+  { id: 'ctl_roundtrip', control: 'must not change', expect: 'd unchanged ("M 99 99")',
+    run: (path) => path.setPathData(path.getPathData()) },
+  { id: 'ctl_unknown_letter', control: 'known from WPT', expect: 'd = "M 0 0"',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "X", values: [] }, { type: "L", values: [1, 1] }]) },
+
+  { group: '1. Commands in the SVG Paths module grammar that no engine parses' },
+  { id: 'g1_bearing_B', expect: 'module: kept. Steps proposed in svgwg#964: dropped',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "B", values: [45] }, { type: "L", values: [10, 10] }]) },
+  { id: 'g1_bearing_b', expect: 'module: kept. Steps proposed in svgwg#964: dropped',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "b", values: [45] }, { type: "L", values: [10, 10] }]) },
+  { id: 'g1_catmull_R', expect: 'module: kept. Steps proposed in svgwg#964: dropped',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "R", values: [10, 10, 20, 0, 30, 10] }, { type: "L", values: [40, 40] }]) },
+  { id: 'g1_markup_B', expect: 'markup control: the d parser stops at B',
+    run: (path) => path.setAttribute("d", "M 0 0 B 45 L 10 10") },
+
+  { group: '2. Web IDL conversion of the argument' },
+  { id: 'g2_missing_values', expect: 'TypeError, d unchanged',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "L" }]) },
+  { id: 'g2_missing_type', expect: 'TypeError, d unchanged',
+    run: (path) => path.setPathData([{ values: [0, 0] }]) },
+  { id: 'g2_values_number', expect: 'TypeError, d unchanged',
+    run: (path) => path.setPathData([{ type: "M", values: 5 }]) },
+  { id: 'g2_argument_null', expect: 'TypeError, d unchanged',
+    run: (path) => path.setPathData(null) },
+  { id: 'g2_argument_object', expect: 'TypeError, d unchanged',
+    run: (path) => path.setPathData({}) },
+  { id: 'g2_values_symbol', expect: 'TypeError, d unchanged',
+    run: (path) => path.setPathData([{ type: "M", values: [Symbol(), 0] }]) },
+  { id: 'g2_values_strings', expect: 'no throw, d = "M 10 20"',
+    run: (path) => path.setPathData([{ type: "M", values: ["10", "20"] }]) },
+  { id: 'g2_values_not_numbers', expect: 'no throw, "a" is NaN, first segment invalid, d removed',
+    run: (path) => path.setPathData([{ type: "M", values: ["a", 0] }]) },
+
+  { group: '3. How numbers are written into d (not specified, see #321)' },
+  { id: 'g3_decimals', expect: 'not specified',
+    run: (path) => path.setPathData([{ type: "M", values: [0.1, 0.25] }]) },
+  { id: 'g3_tiny', expect: 'not specified',
+    run: (path) => path.setPathData([{ type: "M", values: [1e-7, 0] }]) },
+  { id: 'g3_negative_zero', expect: 'not specified',
+    run: (path) => path.setPathData([{ type: "M", values: [-0, 0] }]) },
+  { id: 'g3_more_digits_than_float', expect: 'not specified',
+    run: (path) => path.setPathData([{ type: "M", values: [0.1234567891, 123456789] }]) },
+  { id: 'g3_too_large_for_float', expect: 'float conversion gives Infinity, so truncated: d removed',
+    run: (path) => path.setPathData([{ type: "M", values: [1e39, 0] }]) },
+
+  { group: '4. Arc radii that are negative or zero' },
+  { id: 'g4_arc_negative_rx', expect: 'not specified',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "A", values: [-10, 10, 0, 0, 1, 20, 20] }]) },
+  { id: 'g4_arc_zero_radii', expect: 'not specified',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "A", values: [0, 0, 0, 0, 1, 20, 20] }]) },
+
+  { group: '5. A segment after Z without a new moveto' },
+  { id: 'g5_after_close', expect: 'valid in the grammar: kept',
+    run: (path) => path.setPathData([{ type: "M", values: [0, 0] }, { type: "L", values: [10, 10] }, { type: "Z", values: [] }, { type: "L", values: [20, 20] }]) }
+];
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+// The shown code is the function source, without the arrow-function wrapper.
+const codeOf = (fn) => fn.toString().replace(/^\(path\)\s*=>\s*/, '');
+const pathDataJSON = (path) => {
+  try { return JSON.stringify(path.getPathData().map((s) => ({ type: s.type, values: Array.from(s.values) }))); }
+  catch (e) { return 'getPathData threw ' + e.name; }
+};
+
+document.getElementById('ua').textContent = 'User agent: ' + navigator.userAgent;
+
+(() => {
+  const svg = document.createElementNS(SVGNS, 'svg');
+  document.body.appendChild(svg);
+  const apiPresent = typeof document.createElementNS(SVGNS, 'path').setPathData === 'function';
+  const tbody = document.querySelector('#out tbody');
+  const rows = [];
+  for (const c of CASES) {
+    const tr = document.createElement('tr');
+    if (c.group) { tr.innerHTML = '<td class="g" colspan="6">' + esc(c.group) + '</td>'; tbody.appendChild(tr); continue; }
+    const path = document.createElementNS(SVGNS, 'path');
+    path.setAttribute('d', 'M 99 99');
+    svg.appendChild(path);
+    let thrown = null;
+    if (!apiPresent && c.id !== 'g1_markup_B') thrown = 'no API';
+    else { try { c.run(path); } catch (e) { thrown = e.name; } }
+    const d = path.getAttribute('d');
+    const pd = apiPresent ? pathDataJSON(path) : 'no API';
+    rows.push({ id: c.id, control: c.control || null, code: codeOf(c.run), thrown: thrown, d_after: d, getPathData_after: pd, expected: c.expect });
+    tr.innerHTML = '<td><code>' + c.id + '</code>' + (c.control ? '<br>control, ' + esc(c.control) : '') + '</td>' +
+      '<td><pre>' + esc(codeOf(c.run)) + '</pre></td>' +
+      '<td class="' + (thrown ? 'threw' : 'ok') + '">' + esc(thrown || 'nothing') + '</td>' +
+      '<td><code>' + esc(d === null ? '(no d attribute)' : JSON.stringify(d)) + '</code></td>' +
+      '<td><code>' + esc(pd) + '</code></td><td>' + esc(c.expect) + '</td>';
+    tbody.appendChild(tr);
+    path.remove();
+  }
+  const by = Object.fromEntries(rows.map((r) => [r.id, r]));
+  const controlsPassed = apiPresent &&
+    by.ctl_valid_changes.thrown === null && by.ctl_valid_changes.d_after === 'M 0 0 L 10 10' &&
+    by.ctl_roundtrip.thrown === null && by.ctl_roundtrip.d_after === 'M 99 99' &&
+    by.ctl_unknown_letter.d_after === 'M 0 0';
+  const ua = navigator.userAgent;
+  const engineHint = /Firefox\//.test(ua) ? 'gecko' : /Chrome\/|Chromium\//.test(ua) ? 'blink' : /AppleWebKit/.test(ua) ? 'webkit' : 'unknown';
+  const payload = {
+    probe: 'probe-964-setpathdata-gaps',
+    issue: 'https://github.com/w3c/svgwg/issues/964',
+    date: new Date().toISOString(),
+    user_agent: ua, engine_hint: engineHint, character_set: document.characterSet,
+    api_present: apiPresent, controls_passed: controlsPassed,
+    note: 'Each case starts from d="M 99 99". thrown is the exception name or null. d_after null means the attribute was removed.',
+    rows: rows
+  };
+  document.getElementById('json').textContent = JSON.stringify(payload, null, 1)
+    .replace(/[\u007f-\uffff]/g, (ch) => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'));
+  document.getElementById('status').textContent = 'done. ' + (apiPresent ? '' : 'No setPathData() in this browser. ') +
+    'controls ' + (controlsPassed ? 'passed' : 'FAILED') + '.';
+})();
+</script>
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
