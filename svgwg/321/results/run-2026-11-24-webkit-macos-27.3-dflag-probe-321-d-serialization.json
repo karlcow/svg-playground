@@ -1,0 +1,158 @@
+{
+ "probe": "probe-321-d-serialization",
+ "issue": "https://github.com/w3c/svgwg/issues/321",
+ "date": "2026-11-24T09:14:20.087Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "css_supports_d": true,
+ "style_d_shortcut": true,
+ "controls_passed": true,
+ "run_by": "embedded WKWebView, system WebKit of macOS 27.3 (Safari 27.3 engine; the user agent string says Version/26.4), with CSSDPropertyEnabled turned on (status preview: off in Safari releases, on in Safari Technology Preview). Without the flag the property does not exist and every reading is empty.",
+ "rows": [
+  {
+   "id": "ctl_none",
+   "d": null,
+   "control": "must be none",
+   "expected": "none",
+   "attr_computed": "none",
+   "style_specified": "(no style case)",
+   "style_computed": "(no style case)"
+  },
+  {
+   "id": "ctl_plain",
+   "d": "M 0 0 L 10 10",
+   "control": "must be path(\"M 0 0 L 10 10\")",
+   "expected": "path(\"M 0 0 L 10 10\")",
+   "attr_computed": "path(\"M 0 0 L 10 10\")",
+   "style_specified": "path(\"M 0 0 L 10 10\")",
+   "style_computed": "path(\"M 0 0 L 10 10\")"
+  },
+  {
+   "id": "num_decimals",
+   "d": "M 0.1 0.25",
+   "control": null,
+   "expected": "not specified",
+   "attr_computed": "path(\"M 0.1 0.25\")",
+   "style_specified": "path(\"M 0.1 0.25\")",
+   "style_computed": "path(\"M 0.1 0.25\")"
+  },
+  {
+   "id": "num_negative_zero",
+   "d": "M -0 0",
+   "control": null,
+   "expected": "not specified",
+   "attr_computed": "path(\"M 0 0\")",
+   "style_specified": "path(\"M 0 0\")",
+   "style_computed": "path(\"M 0 0\")"
+  },
+  {
+   "id": "num_tiny",
+   "d": "M 1e-7 0",
+   "control": null,
+   "expected": "not specified",
+   "attr_computed": "path(\"M 1e-7 0\")",
+   "style_specified": "path(\"M 1e-7 0\")",
+   "style_computed": "path(\"M 1e-7 0\")"
+  },
+  {
+   "id": "num_more_digits_than_float",
+   "d": "M 0.1234567891 123456789",
+   "control": null,
+   "expected": "not specified",
+   "attr_computed": "path(\"M 0.123457 1.23457e+8\")",
+   "style_specified": "path(\"M 0.123457 1.23457e+8\")",
+   "style_computed": "path(\"M 0.123457 1.23457e+8\")"
+  },
+  {
+   "id": "num_trailing_zeros",
+   "d": "M 10.0 20.00",
+   "control": null,
+   "expected": "WPT serialization.svg drops them in the specified value",
+   "attr_computed": "path(\"M 10 20\")",
+   "style_specified": "path(\"M 10 20\")",
+   "style_computed": "path(\"M 10 20\")"
+  },
+  {
+   "id": "num_leading_dot",
+   "d": "M .5 -.5",
+   "control": null,
+   "expected": "not specified",
+   "attr_computed": "path(\"M 0.5 -0.5\")",
+   "style_specified": "path(\"M 0.5 -0.5\")",
+   "style_computed": "path(\"M 0.5 -0.5\")"
+  },
+  {
+   "id": "num_exponent_upper",
+   "d": "M 1E2 0",
+   "control": null,
+   "expected": "not specified",
+   "attr_computed": "path(\"M 100 0\")",
+   "style_specified": "path(\"M 100 0\")",
+   "style_computed": "path(\"M 100 0\")"
+  },
+  {
+   "id": "syn_compact_relative",
+   "d": "m100,200h400V300",
+   "control": null,
+   "expected": "computed: absolute (WPT)",
+   "attr_computed": "path(\"M 100 200 H 500 V 300\")",
+   "style_specified": "path(\"m 100 200 h 400 V 300\")",
+   "style_computed": "path(\"M 100 200 H 500 V 300\")"
+  },
+  {
+   "id": "syn_implicit_after_M",
+   "d": "M5,16 33,44",
+   "control": null,
+   "expected": "command letter inserted?",
+   "attr_computed": "path(\"M 5 16 L 33 44\")",
+   "style_specified": "path(\"M 5 16 L 33 44\")",
+   "style_computed": "path(\"M 5 16 L 33 44\")"
+  },
+  {
+   "id": "syn_implicit_after_m",
+   "d": "m5,16 33,44",
+   "control": null,
+   "expected": "command letter inserted?",
+   "attr_computed": "path(\"M 5 16 L 38 60\")",
+   "style_specified": "path(\"m 5 16 l 33 44\")",
+   "style_computed": "path(\"M 5 16 L 38 60\")"
+  },
+  {
+   "id": "syn_repeated_L",
+   "d": "M 0 0 L 5 16 33 44",
+   "control": null,
+   "expected": "command letter inserted?",
+   "attr_computed": "path(\"M 0 0 L 5 16 L 33 44\")",
+   "style_specified": "path(\"M 0 0 L 5 16 L 33 44\")",
+   "style_computed": "path(\"M 0 0 L 5 16 L 33 44\")"
+  },
+  {
+   "id": "syn_compact_arc_flags",
+   "d": "M 0 0 a10 10 0 1020 0",
+   "control": null,
+   "expected": "flags 1 0 then 20 0",
+   "attr_computed": "path(\"M 0 0 A 10 10 0 1 0 20 0\")",
+   "style_specified": "path(\"M 0 0 a 10 10 0 1 0 20 0\")",
+   "style_computed": "path(\"M 0 0 A 10 10 0 1 0 20 0\")"
+  },
+  {
+   "id": "syn_lowercase_z",
+   "d": "M 0 0 L 10 0 z",
+   "control": null,
+   "expected": "Z (WPT)",
+   "attr_computed": "path(\"M 0 0 L 10 0 Z\")",
+   "style_specified": "path(\"M 0 0 L 10 0 Z\")",
+   "style_computed": "path(\"M 0 0 L 10 0 Z\")"
+  },
+  {
+   "id": "syn_after_z",
+   "d": "M 5 5 l 10 10 z l 1 1",
+   "control": null,
+   "expected": "computed: L 6 6 (after z the current point is 5 5)",
+   "attr_computed": "path(\"M 5 5 L 15 15 Z L 6 6\")",
+   "style_specified": "path(\"M 5 5 l 10 10 Z l 1 1\")",
+   "style_computed": "path(\"M 5 5 L 15 15 Z L 6 6\")"
+  }
+ ]
+}
