@@ -9,10 +9,11 @@
 
   Question: with views.svg#v:~:param(--c:green), does the SVG document still
   find <view id="v">? That needs the browser to cut the fragment directive
-  (":~:" and everything after it) before the SVG reads its fragment. No
-  browser ships CSS Linked Parameters, but the cut happens before anyone
-  parses param(), so it can be measured now. :~:text= (Text Fragments) is
-  measured beside it for comparison.
+  (":~:" and everything after it) before the SVG reads its fragment. The
+  cut happens before anyone parses param(), so it can be measured in a
+  browser without Linked Parameters too (WebKit trunk has them on by
+  default since 2026-09-24). :~:text= (Text Fragments) is measured beside
+  it for comparison.
 
   The SVG has four squares: gray top left, ORANGE top right, TEAL bottom left,
   purple bottom right. <view id="v"> shows orange. svgView(viewBox(0,100,100,100))
