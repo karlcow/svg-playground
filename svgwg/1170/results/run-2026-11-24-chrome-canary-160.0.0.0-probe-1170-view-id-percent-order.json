@@ -1,0 +1,111 @@
+{
+ "probe": "probe-1170-view-id-percent-order",
+ "issue": "https://github.com/w3c/svgwg/issues/1170",
+ "date": "2026-11-24T01:08:38.168Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/160.0.0.0 Safari/537.36",
+ "engine_hint": "blink",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "controls_passed_img": true,
+ "controls_passed_iframe": true,
+ "reading": "For #v%41 with both views: orange = matched as written first, teal = matched only after decoding. q_raw_only tells whether the as-written form is tried at all, q_decoded_only whether decoding happens at all, q_double whether the fragment is decoded more than once.",
+ "note": "controls_passed is the img method. If controls_passed_iframe is false, ignore the iframe column (often a cross-origin blob frame from file://).",
+ "rows": [
+  {
+   "id": "ctl_no_fragment",
+   "document": "both",
+   "fragment": "",
+   "control": "must not change",
+   "img": {
+    "result": "no view",
+    "distinct": 4,
+    "dominant": "gray",
+    "pct": 25
+   },
+   "iframe": {
+    "result": "gray"
+   },
+   "prediction": "all: no view (img), gray (iframe)"
+  },
+  {
+   "id": "ctl_vA",
+   "document": "both",
+   "fragment": "#vA",
+   "control": "must change",
+   "img": {
+    "result": "teal",
+    "distinct": 1,
+    "dominant": "teal",
+    "pct": 100
+   },
+   "iframe": {
+    "result": "teal"
+   },
+   "prediction": "all: teal"
+  },
+  {
+   "id": "q_both",
+   "document": "both",
+   "fragment": "#v%41",
+   "control": null,
+   "img": {
+    "result": "teal",
+    "distinct": 1,
+    "dominant": "teal",
+    "pct": 100
+   },
+   "iframe": {
+    "result": "teal"
+   },
+   "prediction": "WebKit, Gecko: orange (as written first). Blink: teal (decoded only)"
+  },
+  {
+   "id": "q_raw_only",
+   "document": "raw_only",
+   "fragment": "#v%41",
+   "control": null,
+   "img": {
+    "result": "no view",
+    "distinct": 4,
+    "dominant": "gray",
+    "pct": 25
+   },
+   "iframe": {
+    "result": "gray"
+   },
+   "prediction": "WebKit, Gecko: orange. Blink: no view (never tries it as written)"
+  },
+  {
+   "id": "q_decoded_only",
+   "document": "decoded_only",
+   "fragment": "#v%41",
+   "control": null,
+   "img": {
+    "result": "teal",
+    "distinct": 1,
+    "dominant": "teal",
+    "pct": 100
+   },
+   "iframe": {
+    "result": "teal"
+   },
+   "prediction": "all: teal (the decoded try finds vA)"
+  },
+  {
+   "id": "q_double",
+   "document": "both",
+   "fragment": "#v%2541",
+   "control": null,
+   "img": {
+    "result": "teal",
+    "distinct": 1,
+    "dominant": "teal",
+    "pct": 100
+   },
+   "iframe": {
+    "result": "orange"
+   },
+   "prediction": "WebKit, Gecko: orange (decoded once to v%41). Blink: img teal (decoded twice to vA), iframe orange"
+  }
+ ]
+}

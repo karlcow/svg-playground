@@ -1,0 +1,20 @@
+{
+ "probe": "probe-1170-view-id-percent-order",
+ "issue": "https://github.com/w3c/svgwg/issues/1170",
+ "date": "2026-11-24T01:01:47.251Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "controls_passed": true,
+ "controls_passed_img": true,
+ "controls_passed_iframe": true,
+ "run_by": "embedded WKWebView, system WebKit of macOS 27.3 (Safari 27.3 engine; the user agent string says Version/26.4), smoke run before the three-browser runs",
+ "rows": [
+  {"id": "ctl_no_fragment", "document": "both", "fragment": "", "control": "must not change", "img": {"result": "no view", "distinct": 4, "dominant": "gray", "pct": 25}, "iframe": {"result": "gray"}},
+  {"id": "ctl_vA", "document": "both", "fragment": "#vA", "control": "must change", "img": {"result": "teal", "distinct": 1, "dominant": "teal", "pct": 100}, "iframe": {"result": "teal"}},
+  {"id": "q_both", "document": "both", "fragment": "#v%41", "control": null, "img": {"result": "orange", "distinct": 1, "dominant": "orange", "pct": 100}, "iframe": {"result": "orange"}},
+  {"id": "q_raw_only", "document": "raw_only", "fragment": "#v%41", "control": null, "img": {"result": "orange", "distinct": 1, "dominant": "orange", "pct": 100}, "iframe": {"result": "orange"}},
+  {"id": "q_decoded_only", "document": "decoded_only", "fragment": "#v%41", "control": null, "img": {"result": "teal", "distinct": 1, "dominant": "teal", "pct": 100}, "iframe": {"result": "teal"}},
+  {"id": "q_double", "document": "both", "fragment": "#v%2541", "control": null, "img": {"result": "orange", "distinct": 1, "dominant": "orange", "pct": 100}, "iframe": {"result": "orange"}}
+ ]
+}
