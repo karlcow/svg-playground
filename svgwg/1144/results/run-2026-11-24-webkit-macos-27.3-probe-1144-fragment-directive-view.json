@@ -1,0 +1,96 @@
+{
+ "probe": "probe-1144-fragment-directive-view",
+ "issue": "https://github.com/w3c/svgwg/issues/1144",
+ "date": "2026-11-24",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "location_protocol": "file:",
+ "run_by": "embedded WKWebView, system WebKit of macOS 27.3 (Safari 27.3 engine; the user agent string says Version/26.4). css column read from screenshot pixels (four quadrant samples per box), screenshots saved beside this file.",
+ "controls_passed": true,
+ "controls_passed_iframe_load": true,
+ "controls_passed_iframe_hash": true,
+ "controls_passed_img": true,
+ "rows": [
+  {
+   "id": "ctl_none",
+   "fragment": "",
+   "control": "must show no view",
+   "expected": "no view",
+   "iframe_load": "no view",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view (four colours)"
+  },
+  {
+   "id": "ctl_v",
+   "fragment": "#v",
+   "control": "must show orange",
+   "expected": "orange",
+   "iframe_load": "orange",
+   "iframe_hash": "orange",
+   "img": "orange",
+   "css": "orange"
+  },
+  {
+   "id": "text_directive",
+   "fragment": "#v:~:text=foo",
+   "control": null,
+   "expected": "orange",
+   "iframe_load": "orange",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view (four colours)"
+  },
+  {
+   "id": "param_directive",
+   "fragment": "#v:~:param(--c:green)",
+   "control": null,
+   "expected": "orange",
+   "iframe_load": "orange",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view (four colours)"
+  },
+  {
+   "id": "param_two",
+   "fragment": "#v:~:param(--c:green)&param(--d:red)",
+   "control": null,
+   "expected": "orange",
+   "iframe_load": "orange",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view (four colours)"
+  },
+  {
+   "id": "param_alone",
+   "fragment": "#:~:param(--c:green)",
+   "control": null,
+   "expected": "no view",
+   "iframe_load": "no view",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view (four colours)"
+  },
+  {
+   "id": "svgview_param",
+   "fragment": "#svgView(viewBox(0,100,100,100)):~:param(--c:green)",
+   "control": null,
+   "expected": "teal",
+   "iframe_load": "teal",
+   "iframe_hash": "teal",
+   "img": "teal",
+   "css": "teal"
+  },
+  {
+   "id": "unknown_id_param",
+   "fragment": "#zzz:~:param(--c:green)",
+   "control": null,
+   "expected": "no view",
+   "iframe_load": "no view",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view (four colours)"
+  }
+ ]
+}
