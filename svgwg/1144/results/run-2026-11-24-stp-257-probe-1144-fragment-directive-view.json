@@ -1,0 +1,105 @@
+{
+ "probe": "probe-1144-fragment-directive-view",
+ "issue": "https://github.com/w3c/svgwg/issues/1144",
+ "date": "2026-11-24T08:26:45.315Z",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "location_protocol": "http:",
+ "controls_passed": false,
+ "controls_passed_iframe_load": true,
+ "controls_passed_iframe_hash": true,
+ "controls_passed_img": false,
+ "note": "css is visual only. A route whose controls_passed_* is false cannot be quoted. iframe routes need http, not file://.",
+ "rows": [
+  {
+   "id": "ctl_none",
+   "fragment": "",
+   "control": "must show no view",
+   "expected": "no view",
+   "iframe_load": "no view",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view",
+   "img_on_screen": "no view"
+  },
+  {
+   "id": "ctl_v",
+   "fragment": "#v",
+   "control": "must show orange",
+   "expected": "orange",
+   "iframe_load": "orange",
+   "iframe_hash": "orange",
+   "img": "no view",
+   "css": "orange",
+   "img_on_screen": "orange"
+  },
+  {
+   "id": "text_directive",
+   "fragment": "#v:~:text=foo",
+   "control": null,
+   "expected": "orange",
+   "iframe_load": "orange",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "orange",
+   "img_on_screen": "orange"
+  },
+  {
+   "id": "param_directive",
+   "fragment": "#v:~:param(--c:green)",
+   "control": null,
+   "expected": "orange",
+   "iframe_load": "orange",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "orange",
+   "img_on_screen": "orange"
+  },
+  {
+   "id": "param_two",
+   "fragment": "#v:~:param(--c:green)&param(--d:red)",
+   "control": null,
+   "expected": "orange",
+   "iframe_load": "orange",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "orange",
+   "img_on_screen": "orange"
+  },
+  {
+   "id": "param_alone",
+   "fragment": "#:~:param(--c:green)",
+   "control": null,
+   "expected": "no view",
+   "iframe_load": "no view",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view",
+   "img_on_screen": "no view"
+  },
+  {
+   "id": "svgview_param",
+   "fragment": "#svgView(viewBox(0,100,100,100)):~:param(--c:green)",
+   "control": null,
+   "expected": "teal",
+   "iframe_load": "teal",
+   "iframe_hash": "teal",
+   "img": "no view",
+   "css": "teal",
+   "img_on_screen": "teal"
+  },
+  {
+   "id": "unknown_id_param",
+   "fragment": "#zzz:~:param(--c:green)",
+   "control": null,
+   "expected": "no view",
+   "iframe_load": "no view",
+   "iframe_hash": "no view",
+   "img": "no view",
+   "css": "no view",
+   "img_on_screen": "no view"
+  }
+ ],
+ "screen_note": "img_on_screen and css read from screenshot-2026-11-24-stp257-firefox163-chrome160-probe-1144.png (Karl, 17:29 JST), four quadrant pixels sampled per box. In STP the img column (canvas) failed its controls because of WebKit bug 330747; img_on_screen is the drawn image."
+}
