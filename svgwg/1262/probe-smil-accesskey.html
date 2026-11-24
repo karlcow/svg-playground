@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Probe: SMIL accessKey() in begin and end</title>
+<link rel="help" href="https://w3c.github.io/svgwg/specs/animations/#AccessKeyValueSyntax">
+<!--
+  Probe for WebKit bug 332075 (https://bugs.webkit.org/show_bug.cgi?id=332075)
+  and w3c/svgwg#1262.
+
+  What it measures. Each row is its own inline <svg> (its own timeline) with a
+  rect of width 10 and a <set> that changes the width to 60. "active" means
+  rect.width.animVal.value is 60. "start" is set.getStartTime(), or the name of
+  the exception it throws (InvalidStateError when there is no current interval).
+
+  Three kinds of rows:
+   1. Parsing rows. Read getStartTime() at load: does the rest of a begin list
+      survive an accessKey item?
+   2. Script-event rows. Dispatch an ordinary DOM Event whose type is the
+      accessKey text itself, e.g. new Event('accessKey(a)'). WebKit and Blink
+      treat the camelCase spelling as an event name, so this starts the
+      animation there. This is the row the WebKit patch changes.
+   3. Second-interval rows. begin="0s; 0.4s" with an end list that has one time
+      (0.2s) plus an accessKey item. Blink counts the dead accesskey condition
+      as an end event, which allows an open-ended second interval; WebKit and
+      Gecko do not. Read at document time 0.8s.
+
+  The keyboard section is manual: press the button, then press "a". A keydown
+  listener on document is the control that must change: if it does not see the
+  key, the keyboard rows prove nothing.
+
+  Controls written before the run:
+   - ctl_time   (must not change): begin="1s", getStartTime() is 1.
+   - ctl_event  (must change): begin="foo", dispatching "foo" makes it active.
+   - key_delivered (must change, keyboard section): keydown "a" seen on document.
+
+  Predictions per engine are read from source (WebKit main, Chromium main,
+  Firefox central, 2026-11-18). null means "not predicted". Do not read a
+  "differs" verdict as a browser bug: it means the source reading was wrong.
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 84rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 3px 6px; text-align: left; vertical-align: top; }
+ th { background: #eee; }
+ pre { background: #f5f5f5; padding: .6rem; overflow-x: auto; font-size: 11px; }
+ pre.markup { margin: 0; padding: .3rem; white-space: pre; }
+ .as-predicted { color: #060; font-weight: 700; }
+ .differs { color: #a00; font-weight: 700; }
+ .no-prediction { color: #666; font-weight: 700; }
+ h2 { font-size: 15px; margin-top: 1.6rem; }
+</style>
+
+<h1>SMIL accessKey() in begin and end: cross-engine probe</h1>
+<p>WebKit bug 332075, w3c/svgwg#1262. Automatic rows run on load (about one second). The keyboard section needs one key press.</p>
+<p id="status">running...</p>
+
+<h2>Automatic rows</h2>
+<table id="auto"><thead><tr><th>id</th><th>live</th><th>code</th><th>what is read</th><th>predicted<br>WebKit / Blink / Gecko</th><th>this browser</th><th>observed record</th><th>verdict</th></tr></thead><tbody></tbody></table>
+
+<h2>Keyboard rows (manual)</h2>
+<p><button type="button" id="keystart">Start keyboard test</button> then press the <kbd>a</kbd> key. <span id="keystate">not run</span></p>
+<table id="keys"><thead><tr><th>id</th><th>live</th><th>code</th><th>what is read</th><th>predicted<br>WebKit / Blink / Gecko</th><th>this browser</th><th>observed record</th><th>verdict</th></tr></thead><tbody></tbody></table>
+
+<h2>JSON payload</h2>
+<pre id="json">...</pre>
+
+<script>
+// One <set> per row. {ID} is the rect's id; on the page it is made unique per
+// row, in the displayed markup it is shown as "r". The action functions get
+// s = { svg, rect, set } for their row; the displayed script drops the "s."
+// prefix, so "rect" in the code column is that row's rect.
+const AUTO = [
+  { id: 'ctl_time', role: 'control, must not change', set: 'begin="1s"',
+    look: 'start_before', predict: { webkit: 1, blink: 1, gecko: 1 } },
+  { id: 'ctl_event', role: 'control, must change', set: 'begin="foo"',
+    action: s => s.rect.dispatchEvent(new Event('foo')),
+    look: 'active_after', predict: { webkit: true, blink: true, gecko: true } },
+
+  { id: 'list_after', set: 'begin="accessKey(a); 1s"',
+    look: 'start_before', predict: { webkit: 1, blink: 1, gecko: 1 } },
+  { id: 'list_before', set: 'begin="1s; accessKey(a)"',
+    look: 'start_before', predict: { webkit: 1, blink: 1, gecko: 1 } },
+  { id: 'alone', set: 'begin="accessKey(a)"',
+    look: 'start_before', predict: { webkit: 'InvalidStateError', blink: 'InvalidStateError', gecko: 'InvalidStateError' } },
+
+  { id: 'event_camel', set: 'begin="accessKey(a)"',
+    action: s => s.rect.dispatchEvent(new Event('accessKey(a)')),
+    look: 'active_after', predict: { webkit: true, blink: true, gecko: false } },
+  { id: 'event_lower', set: 'begin="accesskey(a)"',
+    action: s => s.rect.dispatchEvent(new Event('accesskey(a)')),
+    look: 'active_after', predict: { webkit: false, blink: false, gecko: false } },
+  { id: 'event_upper', set: 'begin="ACCESSKEY(a)"',
+    action: s => s.rect.dispatchEvent(new Event('ACCESSKEY(a)')),
+    look: 'active_after', predict: { webkit: true, blink: true, gecko: null } },
+  { id: 'event_offset', set: 'begin="accessKey(a) + 2s"',
+    action: s => s.rect.dispatchEvent(new Event('accessKey(a)')),
+    look: 'start_after_rel', predict: { webkit: 2, blink: 2, gecko: 'InvalidStateError' } },
+  { id: 'event_idbase', set: 'begin="{ID}.accessKey(a)"',
+    action: s => s.rect.dispatchEvent(new Event('accessKey(a)')),
+    look: 'active_after', predict: { webkit: true, blink: true, gecko: null } },
+  { id: 'event_dot_key', set: 'begin="accessKey(.)"',
+    action: s => s.rect.dispatchEvent(new Event('accessKey(.)')),
+    look: 'active_after', predict: { webkit: false, blink: false, gecko: false } },
+
+  { id: 'end_event_camel', set: 'begin="0s" end="accessKey(a)" dur="indefinite"',
+    action: s => s.rect.dispatchEvent(new Event('accessKey(a)')),
+    look: 'active_after', predict: { webkit: false, blink: false, gecko: true } },
+  { id: 'end_event_lower', set: 'begin="0s" end="accesskey(a)" dur="indefinite"',
+    action: s => s.rect.dispatchEvent(new Event('accesskey(a)')),
+    look: 'active_after', predict: { webkit: true, blink: true, gecko: true } },
+
+  { id: 'second_accesskey', set: 'begin="0s; 0.4s" end="accesskey(a); 0.2s" dur="indefinite"',
+    at: 0.8, look: 'active_at', predict: { webkit: false, blink: true, gecko: false } },
+  { id: 'second_ctl_event', role: 'reference for second_accesskey', set: 'begin="0s; 0.4s" end="foo; 0.2s" dur="indefinite"',
+    at: 0.8, look: 'active_at', predict: { webkit: true, blink: true, gecko: true } },
+  { id: 'second_ctl_none', role: 'reference for second_accesskey', set: 'begin="0s; 0.4s" end="0.2s" dur="indefinite"',
+    at: 0.8, look: 'active_at', predict: { webkit: false, blink: false, gecko: false } },
+];
+
+const KEYS = [
+  { id: 'key_begin_camel', set: 'begin="accessKey(a)"',
+    look: 'active_after_key', predict: { webkit: false, blink: false, gecko: false } },
+  { id: 'key_begin_lower', set: 'begin="accesskey(a)"',
+    look: 'active_after_key', predict: { webkit: false, blink: false, gecko: false } },
+  { id: 'key_end_camel', set: 'begin="0s" end="accessKey(a)" dur="indefinite"',
+    look: 'active_after_key', predict: { webkit: true, blink: true, gecko: true } },
+  { id: 'key_end_lower', set: 'begin="0s" end="accesskey(a)" dur="indefinite"',
+    look: 'active_after_key', predict: { webkit: true, blink: true, gecko: true } },
+];
+
+const ua = navigator.userAgent;
+const engine = /Firefox\//.test(ua) ? 'gecko' : /(Chrome|Chromium|Edg)\//.test(ua) ? 'blink' : /AppleWebKit/.test(ua) ? 'webkit' : 'unknown';
+const SVGNS = 'http://www.w3.org/2000/svg';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const asciiJSON = o => JSON.stringify(o, null, 1)
+  .replace(/[\u007f-\uffff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+
+function markupFor(c, id) {
+  return '<svg width="70" height="20">\n <rect id="' + id + '" width="10" height="20" fill="#36c">\n  <set attributeName="width" to="60" '
+    + c.set.replaceAll('{ID}', id) + '/>\n </rect>\n</svg>';
+}
+function showScript(fn) {
+  if (!fn) return '';
+  return '\n\n// script, 100 ms after insertion:\n' + fn.toString().replace(/^\s*s\s*=>\s*/, '').replace(/\bs\./g, '') + ';';
+}
+function readLine(c) {
+  return {
+    start_before: 'getStartTime() 100 ms after insertion',
+    active_after: 'active 250 ms after the script ran',
+    start_after_rel: 'getStartTime() minus document time when the script ran (rounded to 0.1)',
+    active_at: 'active at document time ' + c.at + 's',
+    active_after_key: 'active 300 ms after keydown "a"',
+  }[c.look];
+}
+function cell(tr, content) {
+  const td = tr.insertCell();
+  if (typeof content === 'string') { const p = document.createElement('pre'); p.className = 'markup'; p.textContent = content; td.append(p); }
+  else if (content) td.append(content);
+  return td;
+}
+function startOf(set) {
+  try { return Math.round(set.getStartTime() * 100) / 100; } catch (e) { return e.name; }
+}
+const isActive = rect => rect.width.animVal.value === 60;
+
+function build(c, tbody) {
+  const uid = 'r_' + c.id;
+  const tpl = document.createElement('template');
+  tpl.innerHTML = markupFor(c, uid);
+  const svg = tpl.content.firstElementChild;
+  const tr = tbody.insertRow();
+  cell(tr, c.id + (c.role ? '\n(' + c.role + ')' : ''));
+  cell(tr, svg);
+  cell(tr, markupFor(c, 'r') + showScript(c.action));
+  cell(tr, readLine(c));
+  cell(tr, ['webkit', 'blink', 'gecko'].map(e => JSON.stringify(c.predict[e])).join(' / '));
+  const s = { svg, rect: svg.querySelector('rect'), set: svg.querySelector('set'), tr };
+  return s;
+}
+function finish(c, s, rec) {
+  const value = rec[c.look];
+  const predicted = engine in c.predict ? c.predict[engine] : null;
+  const verdict = predicted === null || predicted === undefined ? 'no-prediction' : (value === predicted ? 'as-predicted' : 'differs');
+  cell(s.tr, JSON.stringify(value));
+  cell(s.tr, JSON.stringify(rec));
+  const td = cell(s.tr, null); td.textContent = verdict; td.className = verdict;
+  return { id: c.id, role: c.role || null, markup: markupFor(c, 'r'), script: c.action ? showScript(c.action).trim() : null,
+           look: c.look, value, predicted_for_this_engine: predicted, predict: c.predict, verdict, record: rec };
+}
+
+async function waitDocTime(svg, t) {
+  const deadline = performance.now() + 5000;
+  while (svg.getCurrentTime() < t && performance.now() < deadline) await sleep(20);
+}
+
+async function runAuto(c, tbody) {
+  const s = build(c, tbody);
+  await sleep(100);
+  const rec = { start_before: startOf(s.set), active_before: isActive(s.rect) };
+  if (c.action) {
+    const t0 = s.svg.getCurrentTime();
+    c.action(s);
+    await sleep(250);
+    rec.active_after = isActive(s.rect);
+    const st = startOf(s.set);
+    rec.start_after_rel = typeof st === 'number' ? Math.round((st - t0) * 10) / 10 : st;
+  }
+  if (c.at) {
+    await waitDocTime(s.svg, c.at);
+    rec.doc_time = Math.round(s.svg.getCurrentTime() * 100) / 100;
+    rec.active_at = isActive(s.rect);
+  }
+  return finish(c, s, rec);
+}
+
+const payload = {
+  probe: 'smil-accesskey',
+  bug: 'https://bugs.webkit.org/show_bug.cgi?id=332075',
+  spec_issue: 'https://github.com/w3c/svgwg/issues/1262',
+  user_agent: ua, engine_hint: engine, character_set: document.characterSet,
+  controls_passed: null, cases: [], key_test: 'not run',
+};
+const render = () => { document.getElementById('json').textContent = asciiJSON(payload); };
+
+(async () => {
+  // Wait for the load event first. WebKit starts the SMIL timelines of inline
+  // <svg> elements at document load; rows inserted while the page is still
+  // parsing record an event begin time but are not sampled, so "active" reads
+  // false (seen in the first WebKit run, 2026-11-18).
+  if (document.readyState !== 'complete') await new Promise(r => addEventListener('load', r, { once: true }));
+  const tbody = document.querySelector('#auto tbody');
+  payload.cases = await Promise.all(AUTO.map(c => runAuto(c, tbody)));
+  const byId = Object.fromEntries(payload.cases.map(r => [r.id, r]));
+  payload.controls_passed = {
+    ctl_time: byId.ctl_time.value === 1,
+    ctl_event: byId.ctl_event.record.active_before === false && byId.ctl_event.record.active_after === true,
+    key_delivered: null,
+  };
+  const ok = payload.controls_passed.ctl_time && payload.controls_passed.ctl_event;
+  document.getElementById('status').textContent = 'done (' + engine + '). Automatic controls ' + (ok ? 'passed' : 'FAILED') + '. '
+    + payload.cases.filter(r => r.verdict === 'differs').length + ' row(s) differ from the source reading. Keyboard test: not run yet.';
+  render();
+})();
+
+document.getElementById('keystart').addEventListener('click', async ev => {
+  ev.target.disabled = true;
+  const state = document.getElementById('keystate');
+  const tbody = document.querySelector('#keys tbody');
+  const rows = KEYS.map(c => [c, build(c, tbody)]);
+  await sleep(100);
+  state.textContent = 'armed: press "a" now (30 s)';
+  const key = await new Promise(resolve => {
+    const t = setTimeout(() => resolve(null), 30000);
+    document.addEventListener('keydown', function h(e) {
+      if (e.key !== 'a') { state.textContent = 'got "' + e.key + '", press "a"'; return; }
+      clearTimeout(t); document.removeEventListener('keydown', h); resolve(e.key);
+    });
+  });
+  await sleep(300);
+  const cases = rows.map(([c, s]) => finish(c, s, { active_after_key: isActive(s.rect), start: startOf(s.set) }));
+  payload.controls_passed.key_delivered = key === 'a';
+  payload.key_test = { key_delivered: key === 'a', cases };
+  state.textContent = key === 'a' ? 'done: key "a" seen on document' : 'timed out, no "a" seen: keyboard rows prove nothing';
+  render();
+});
+</script>
+
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
+</html>

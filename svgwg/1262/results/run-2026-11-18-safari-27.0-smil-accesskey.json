@@ -1,0 +1,424 @@
+{
+ "probe": "smil-accesskey",
+ "bug": "https://bugs.webkit.org/show_bug.cgi?id=332075",
+ "spec_issue": "https://github.com/w3c/svgwg/issues/1262",
+ "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Safari/605.1.15",
+ "engine_hint": "webkit",
+ "character_set": "UTF-8",
+ "controls_passed": {
+  "ctl_time": true,
+  "ctl_event": true,
+  "key_delivered": true
+ },
+ "cases": [
+  {
+   "id": "ctl_time",
+   "role": "control, must not change",
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"1s\"/>\n </rect>\n</svg>",
+   "script": null,
+   "look": "start_before",
+   "value": 1,
+   "predicted_for_this_engine": 1,
+   "predict": {
+    "webkit": 1,
+    "blink": 1,
+    "gecko": 1
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": 1,
+    "active_before": false
+   }
+  },
+  {
+   "id": "ctl_event",
+   "role": "control, must change",
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"foo\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('foo'));",
+   "look": "active_after",
+   "value": true,
+   "predicted_for_this_engine": true,
+   "predict": {
+    "webkit": true,
+    "blink": true,
+    "gecko": true
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": "InvalidStateError",
+    "active_before": false,
+    "active_after": true,
+    "start_after_rel": 0
+   }
+  },
+  {
+   "id": "list_after",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"accessKey(a); 1s\"/>\n </rect>\n</svg>",
+   "script": null,
+   "look": "start_before",
+   "value": 1,
+   "predicted_for_this_engine": 1,
+   "predict": {
+    "webkit": 1,
+    "blink": 1,
+    "gecko": 1
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": 1,
+    "active_before": false
+   }
+  },
+  {
+   "id": "list_before",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"1s; accessKey(a)\"/>\n </rect>\n</svg>",
+   "script": null,
+   "look": "start_before",
+   "value": 1,
+   "predicted_for_this_engine": 1,
+   "predict": {
+    "webkit": 1,
+    "blink": 1,
+    "gecko": 1
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": 1,
+    "active_before": false
+   }
+  },
+  {
+   "id": "alone",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"accessKey(a)\"/>\n </rect>\n</svg>",
+   "script": null,
+   "look": "start_before",
+   "value": "InvalidStateError",
+   "predicted_for_this_engine": "InvalidStateError",
+   "predict": {
+    "webkit": "InvalidStateError",
+    "blink": "InvalidStateError",
+    "gecko": "InvalidStateError"
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": "InvalidStateError",
+    "active_before": false
+   }
+  },
+  {
+   "id": "event_camel",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"accessKey(a)\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('accessKey(a)'));",
+   "look": "active_after",
+   "value": true,
+   "predicted_for_this_engine": true,
+   "predict": {
+    "webkit": true,
+    "blink": true,
+    "gecko": false
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": "InvalidStateError",
+    "active_before": false,
+    "active_after": true,
+    "start_after_rel": 0
+   }
+  },
+  {
+   "id": "event_lower",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"accesskey(a)\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('accesskey(a)'));",
+   "look": "active_after",
+   "value": false,
+   "predicted_for_this_engine": false,
+   "predict": {
+    "webkit": false,
+    "blink": false,
+    "gecko": false
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": "InvalidStateError",
+    "active_before": false,
+    "active_after": false,
+    "start_after_rel": "InvalidStateError"
+   }
+  },
+  {
+   "id": "event_upper",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"ACCESSKEY(a)\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('ACCESSKEY(a)'));",
+   "look": "active_after",
+   "value": true,
+   "predicted_for_this_engine": true,
+   "predict": {
+    "webkit": true,
+    "blink": true,
+    "gecko": null
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": "InvalidStateError",
+    "active_before": false,
+    "active_after": true,
+    "start_after_rel": 0
+   }
+  },
+  {
+   "id": "event_offset",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"accessKey(a) + 2s\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('accessKey(a)'));",
+   "look": "start_after_rel",
+   "value": 2,
+   "predicted_for_this_engine": 2,
+   "predict": {
+    "webkit": 2,
+    "blink": 2,
+    "gecko": "InvalidStateError"
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": "InvalidStateError",
+    "active_before": false,
+    "active_after": false,
+    "start_after_rel": 2
+   }
+  },
+  {
+   "id": "event_idbase",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"r.accessKey(a)\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('accessKey(a)'));",
+   "look": "active_after",
+   "value": true,
+   "predicted_for_this_engine": true,
+   "predict": {
+    "webkit": true,
+    "blink": true,
+    "gecko": null
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": "InvalidStateError",
+    "active_before": false,
+    "active_after": true,
+    "start_after_rel": 0
+   }
+  },
+  {
+   "id": "event_dot_key",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"accessKey(.)\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('accessKey(.)'));",
+   "look": "active_after",
+   "value": false,
+   "predicted_for_this_engine": false,
+   "predict": {
+    "webkit": false,
+    "blink": false,
+    "gecko": false
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": "InvalidStateError",
+    "active_before": false,
+    "active_after": false,
+    "start_after_rel": "InvalidStateError"
+   }
+  },
+  {
+   "id": "end_event_camel",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"0s\" end=\"accessKey(a)\" dur=\"indefinite\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('accessKey(a)'));",
+   "look": "active_after",
+   "value": false,
+   "predicted_for_this_engine": false,
+   "predict": {
+    "webkit": false,
+    "blink": false,
+    "gecko": true
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": 0,
+    "active_before": true,
+    "active_after": false,
+    "start_after_rel": -0.1
+   }
+  },
+  {
+   "id": "end_event_lower",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"0s\" end=\"accesskey(a)\" dur=\"indefinite\"/>\n </rect>\n</svg>",
+   "script": "// script, 100 ms after insertion:\nrect.dispatchEvent(new Event('accesskey(a)'));",
+   "look": "active_after",
+   "value": true,
+   "predicted_for_this_engine": true,
+   "predict": {
+    "webkit": true,
+    "blink": true,
+    "gecko": true
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": 0,
+    "active_before": true,
+    "active_after": true,
+    "start_after_rel": -0.1
+   }
+  },
+  {
+   "id": "second_accesskey",
+   "role": null,
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"0s; 0.4s\" end=\"accesskey(a); 0.2s\" dur=\"indefinite\"/>\n </rect>\n</svg>",
+   "script": null,
+   "look": "active_at",
+   "value": false,
+   "predicted_for_this_engine": false,
+   "predict": {
+    "webkit": false,
+    "blink": true,
+    "gecko": false
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": 0,
+    "active_before": true,
+    "doc_time": 0.81,
+    "active_at": false
+   }
+  },
+  {
+   "id": "second_ctl_event",
+   "role": "reference for second_accesskey",
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"0s; 0.4s\" end=\"foo; 0.2s\" dur=\"indefinite\"/>\n </rect>\n</svg>",
+   "script": null,
+   "look": "active_at",
+   "value": true,
+   "predicted_for_this_engine": true,
+   "predict": {
+    "webkit": true,
+    "blink": true,
+    "gecko": true
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": 0,
+    "active_before": true,
+    "doc_time": 0.81,
+    "active_at": true
+   }
+  },
+  {
+   "id": "second_ctl_none",
+   "role": "reference for second_accesskey",
+   "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"0s; 0.4s\" end=\"0.2s\" dur=\"indefinite\"/>\n </rect>\n</svg>",
+   "script": null,
+   "look": "active_at",
+   "value": false,
+   "predicted_for_this_engine": false,
+   "predict": {
+    "webkit": false,
+    "blink": false,
+    "gecko": false
+   },
+   "verdict": "as-predicted",
+   "record": {
+    "start_before": 0,
+    "active_before": true,
+    "doc_time": 0.81,
+    "active_at": false
+   }
+  }
+ ],
+ "key_test": {
+  "key_delivered": true,
+  "cases": [
+   {
+    "id": "key_begin_camel",
+    "role": null,
+    "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"accessKey(a)\"/>\n </rect>\n</svg>",
+    "script": null,
+    "look": "active_after_key",
+    "value": false,
+    "predicted_for_this_engine": false,
+    "predict": {
+     "webkit": false,
+     "blink": false,
+     "gecko": false
+    },
+    "verdict": "as-predicted",
+    "record": {
+     "active_after_key": false,
+     "start": "InvalidStateError"
+    }
+   },
+   {
+    "id": "key_begin_lower",
+    "role": null,
+    "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"accesskey(a)\"/>\n </rect>\n</svg>",
+    "script": null,
+    "look": "active_after_key",
+    "value": false,
+    "predicted_for_this_engine": false,
+    "predict": {
+     "webkit": false,
+     "blink": false,
+     "gecko": false
+    },
+    "verdict": "as-predicted",
+    "record": {
+     "active_after_key": false,
+     "start": "InvalidStateError"
+    }
+   },
+   {
+    "id": "key_end_camel",
+    "role": null,
+    "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"0s\" end=\"accessKey(a)\" dur=\"indefinite\"/>\n </rect>\n</svg>",
+    "script": null,
+    "look": "active_after_key",
+    "value": true,
+    "predicted_for_this_engine": true,
+    "predict": {
+     "webkit": true,
+     "blink": true,
+     "gecko": true
+    },
+    "verdict": "as-predicted",
+    "record": {
+     "active_after_key": true,
+     "start": 0
+    }
+   },
+   {
+    "id": "key_end_lower",
+    "role": null,
+    "markup": "<svg width=\"70\" height=\"20\">\n <rect id=\"r\" width=\"10\" height=\"20\" fill=\"#36c\">\n  <set attributeName=\"width\" to=\"60\" begin=\"0s\" end=\"accesskey(a)\" dur=\"indefinite\"/>\n </rect>\n</svg>",
+    "script": null,
+    "look": "active_after_key",
+    "value": true,
+    "predicted_for_this_engine": true,
+    "predict": {
+     "webkit": true,
+     "blink": true,
+     "gecko": true
+    },
+    "verdict": "as-predicted",
+    "record": {
+     "active_after_key": true,
+     "start": 0
+    }
+   }
+  ]
+ }
+}
