@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>probe-fragment-sizing</title>
+<!-- v2 2026-11-26: isolated ratio rows (c_*_solo, c_pct_after_view), viewbox_only_canvas_ok, samples kept in the payload. v1 kept as probe-fragment-sizing.v1.html. -->
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/linking.html#SVGFragmentIdentifiersDefinitions">
+<link rel="help" href="https://www.w3.org/TR/media-frags/#naming-space">
+<link rel="help" href="https://www.w3.org/TR/media-frags/#error-media-spatial">
+<!--
+  Probe for the SVG 2 media fragment sizing questions (svgwg, not filed yet):
+
+    A. Units. SVG 2 says the viewBox "is overriden by the x, y, width and height
+       values", so the numbers become viewBox units. Media Fragments says pixel
+       values are pixels of the image and percent values are percent of the
+       image. The two readings differ when width/height and viewBox differ.
+    B. Pixel clamping when the image has no natural size (#1136 covered percent
+       only).
+    C. Natural aspect ratio after a fragment: does the fragment's view also give
+       the <img> its ratio?
+
+  Images (made by make-svgs.py next to this file): a grid of 100-unit cells,
+  cell (i,j) filled rgb(30+50i, 30+50j, 160), labelled "i,j".
+    sz-d-400-vb400.svg       width=400 height=400 viewBox="0 0 400 400"  (units agree: control)
+    sz-a-200-vb400.svg       width=200 height=200 viewBox="0 0 400 400"  (units differ by 2)
+    sz-e-400-vb100.svg       width=400 height=400 viewBox="100 100 400 400" (origin differs)
+    sz-b-vbonly-400.svg      viewBox="0 0 400 400" only (no natural size, ratio 1)
+    sz-c-vbonly-400x200.svg  viewBox="0 0 400 200" only (ratio 2), <view id="sq" viewBox="0 0 200 200">
+
+  Observable, groups A and B: the image is drawn into a 100x100 canvas and the
+  cell under each corner sample (12,12) (88,12) (12,88) (88,88) is decoded from
+  its colour. The four cells name the region the engine selected. The live <img>
+  column shows the same thing for engines whose canvas path drops fragments
+  (WebKit, bugs 322167 and 330747): read it from a screenshot.
+  Observable, group C: the layout height of <img style="width:200px">, plus
+  naturalWidth/naturalHeight. 100 = authored 2:1 ratio, 200 = the fragment's
+  square view gives the ratio.
+
+  Each case lists what the region would be under each reading, written before
+  the run:
+    mf      Media Fragments reading: pixel and percent are in image pixels.
+    vbunits what the SVG 2 sentence says literally: numbers used as viewBox
+            units (clamped against the natural size, as all three engines do).
+  and predictions from source: ff = Gecko SVGFragmentIdentifier.cpp
+  (GetIntrinsicSizeWithFallback: 300 wide fallback, height from the ratio),
+  ch = Blink svg_view_spec.cc CreateFromSpatialFragment, wk = WebKit PR 82207
+  SpatialMediaFragment.cpp (with "SVG spatial media fragments" enabled).
+
+  Controls:
+    must not change: d_none and d_none_again read "full" and identical samples.
+    must change:     d_view (#q, a <view> element) reads "br-quarter" on the canvas.
+                     If it reads "full", the canvas path drops fragments in this
+                     engine; use the live <img> column for groups A and B.
+    support:         d_px_cell (plain xywh=100,100,100,100 on the control image)
+                     reads "cell-1-1" when xywh is supported at all.
+    group C:         c_none height must be 100 (2:1 ratio honoured).
+
+  Serve over http: cd <this folder> && python3 -m http.server 8000
+  then open http://localhost:8000/probe-fragment-sizing.html
+-->
+<style>
+ body { font: 13px/1.45 -apple-system, system-ui, sans-serif; margin: 1.5rem; max-width: 92rem; }
+ table { border-collapse: collapse; margin: .6rem 0 1.2rem; font-size: 12px; }
+ th, td { border: 1px solid #bbb; padding: 3px 6px; text-align: left; vertical-align: middle; }
+ th { background: #eee; }
+ code { font-size: 11px; white-space: pre-wrap; }
+ pre { background: #f5f5f5; padding: .6rem; overflow-x: auto; font-size: 11px; }
+ img.live { width: 80px; height: 80px; border: 1px solid #ccc; display: block; }
+ .ok { color: #060; font-weight: 700; } .bad { color: #a00; font-weight: 700; }
+ .ratio-box { width: 200px; outline: 1px solid #ccc; display: block; }
+</style>
+<h1>SVG image media fragments: units, clamping, ratio</h1>
+<p id="status">running...</p>
+
+<h2>A and B: which region is shown</h2>
+<table id="regions"><thead><tr><th>id</th><th>code</th><th>live img</th><th>canvas reading</th><th>mf / vbunits</th><th>predicted from source</th></tr></thead><tbody></tbody></table>
+
+<h2>C: natural aspect ratio after a fragment</h2>
+<table id="ratios"><thead><tr><th>id</th><th>code</th><th>live img (width 200px)</th><th>height</th><th>naturalWidth x naturalHeight</th><th>predicted height</th></tr></thead><tbody></tbody></table>
+
+<h2>The SVG images, as served</h2>
+<div id="sources"></div>
+
+<h2>JSON payload</h2>
+<pre id="json">…</pre>
+
+<script>
+// Region names: the four corner cells TL TR BL BR, as "i,j".
+const REGIONS = {
+  '0,0 3,0 0,3 3,3': 'full',
+  '0,0 1,0 0,1 1,1': 'tl-quarter',
+  '2,2 3,2 2,3 3,3': 'br-quarter',
+  '1,1 1,1 1,1 1,1': 'cell-1-1',
+  '0,0 0,0 0,0 0,0': 'cell-0-0',
+  '0,0 2,0 0,2 2,2': 'tl-3x3',
+  '1,1 2,1 1,2 2,2': 'mid-2x2',
+  '1,1 4,1 1,4 4,4': 'e-full',
+};
+
+const D = 'sz-d-400-vb400.svg', A = 'sz-a-200-vb400.svg', E = 'sz-e-400-vb100.svg';
+const B = 'sz-b-vbonly-400.svg', C = 'sz-c-vbonly-400x200.svg';
+
+// Region cases. control: expected reading that must hold. mf / vbunits: the two
+// readings of the specs. predict: from engine source, before the run.
+const REGION_CASES = [
+  { id: 'd_none',       file: D, frag: null, control: 'full' },
+  { id: 'd_none_again', file: D, frag: null, control: 'full' },
+  { id: 'd_view',       file: D, frag: 'q', control: 'br-quarter' },
+  { id: 'd_px_cell',    file: D, frag: 'xywh=100,100,100,100', mf: 'cell-1-1', vbunits: 'cell-1-1', predict: { ff: 'cell-1-1', ch: 'cell-1-1', wk: 'cell-1-1' } },
+  { id: 'd_pct_full',   file: D, frag: 'xywh=percent:0,0,100,100', mf: 'full', vbunits: 'full', predict: { ff: 'full', ch: 'full', wk: 'full' } },
+  { id: 'd_pct_br',     file: D, frag: 'xywh=percent:50,50,50,50', mf: 'br-quarter', vbunits: 'br-quarter', predict: { ff: 'br-quarter', ch: 'br-quarter', wk: 'br-quarter' } },
+
+  { id: 'a_none',       file: A, frag: null, control: 'full' },
+  { id: 'a_pct_full',   file: A, frag: 'xywh=percent:0,0,100,100', mf: 'full', vbunits: 'tl-quarter', predict: { ff: 'tl-quarter', ch: 'tl-quarter', wk: 'tl-quarter' } },
+  { id: 'a_px_full',    file: A, frag: 'xywh=0,0,200,200', mf: 'full', vbunits: 'tl-quarter', predict: { ff: 'tl-quarter', ch: 'tl-quarter', wk: 'tl-quarter' } },
+  { id: 'a_pct_br',     file: A, frag: 'xywh=percent:50,50,50,50', mf: 'br-quarter', vbunits: 'cell-1-1', predict: { ff: 'cell-1-1', ch: 'cell-1-1', wk: 'cell-1-1' } },
+  { id: 'a_px_br',      file: A, frag: 'xywh=100,100,100,100', mf: 'br-quarter', vbunits: 'cell-1-1', predict: { ff: 'cell-1-1', ch: 'cell-1-1', wk: 'cell-1-1' } },
+  { id: 'a_px_over',    file: A, frag: 'xywh=0,0,400,400', mf: 'full', vbunits: 'tl-quarter', predict: { ff: 'tl-quarter', ch: 'tl-quarter', wk: 'tl-quarter' } },
+
+  { id: 'e_none',       file: E, frag: null, control: 'e-full' },
+  { id: 'e_px_tl',      file: E, frag: 'xywh=0,0,100,100', mf: 'cell-1-1', vbunits: 'cell-0-0', predict: { ff: 'cell-0-0', ch: 'cell-0-0', wk: 'cell-0-0' } },
+
+  // No natural size. mf: Media Fragments has no answer without a size; the value
+  // given is what the #1136 percent rule (default sizing, 300x150 default object
+  // size, so 150x150 here) would give if pixel clamping used the same size.
+  { id: 'b_none',       file: B, frag: null, control: 'full' },
+  { id: 'b_px_over',    file: B, frag: 'xywh=0,0,400,400', mf: 'tl-quarter (if clamped at 150)', vbunits: 'full (no clamp)', predict: { ff: 'tl-3x3', ch: 'full', wk: 'full' } },
+  { id: 'b_pct_half',   file: B, frag: 'xywh=percent:50,50,50,50', mf: 'tl-quarter (75,75,75,75)', vbunits: 'tl-quarter (75,75,75,75)', predict: { ff: 'mid-2x2', ch: 'tl-quarter', wk: 'tl-quarter' } },
+];
+
+// Ratio cases: <img style="width:200px">, layout height.
+const RATIO_CASES = [
+  { id: 'c_none',    file: C, frag: null, control: 100 },
+  { id: 'c_view',    file: C, frag: 'sq', predict: { ff: 200, ch: 200, wk: 100 } },
+  { id: 'c_svgview', file: C, frag: 'svgView(viewBox(0,0,200,200))', predict: { ff: 200, ch: 200, wk: 100 } },
+  { id: 'c_px',      file: C, frag: 'xywh=0,0,100,100', predict: { ff: 200, ch: 200, wk: 100 } },
+  { id: 'c_pct',     file: C, frag: 'xywh=percent:0,0,50,100', predict: { ff: 200, ch: 200, wk: 100 } },
+  // v2: the same fragments on a URL of their own (query string), so the SVG
+  // document is not shared with the rows above. Blink computes the percent base
+  // from the document's current view, which the previous <img> may have set
+  // (svg_image.cc CreateViewInfo -> GetNaturalDimensions(nullptr) ->
+  // CurrentViewBox). If c_pct and c_pct_solo differ, the result depends on
+  // page order.
+  { id: 'c_pct_solo', file: C + '?solo=pct', frag: 'xywh=percent:0,0,50,100', predict: { ff: 200, ch: 200, wk: 100 } },
+  { id: 'c_px_solo',  file: C + '?solo=px', frag: 'xywh=0,0,100,100', predict: { ff: 200, ch: 200, wk: 100 } },
+  { id: 'c_pct_after_view', file: C + '?solo=pct2', frag: 'sq', then: 'xywh=percent:0,0,50,100', predict: { ff: 200, ch: 400, wk: 100 } },
+];
+
+const srcFor = (c) => c.file + (c.frag === null ? '' : '#' + c.frag);
+
+function cellOf(r, g, b) {
+  const i = Math.round((r - 30) / 50), j = Math.round((g - 30) / 50);
+  if (i < 0 || i > 4 || j < 0 || j > 4) return '?';
+  if (Math.abs(r - (30 + 50 * i)) > 20 || Math.abs(g - (30 + 50 * j)) > 20 || Math.abs(b - 160) > 30) return '?';
+  return i + ',' + j;
+}
+
+function load(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('load failed: ' + src));
+    img.src = src;
+  });
+}
+
+async function measureRegion(c) {
+  const img = await load(srcFor(c));
+  if (img.decode) { try { await img.decode(); } catch (e) {} }
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 100;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, 100, 100);
+  const pts = [[12, 12], [88, 12], [12, 88], [88, 88]];
+  const samples = pts.map(([x, y]) => { const d = ctx.getImageData(x, y, 1, 1).data; return [d[0], d[1], d[2], d[3]]; });
+  const cells = samples.map(s => cellOf(s[0], s[1], s[2])).join(' ');
+  return { cells, reading: REGIONS[cells] || ('other:' + cells), samples };
+}
+
+function measureRatio(c, holder) {
+  return new Promise((resolve) => {
+    const img = document.createElement('img');
+    img.className = 'ratio-box';
+    // A timer, not requestAnimationFrame: a window in the background fires no frames.
+    const done = (error) => setTimeout(() => {
+      const r = img.getBoundingClientRect();
+      resolve({ img, height: Math.round(r.height * 10) / 10, natural: img.naturalWidth + 'x' + img.naturalHeight, error: error || null });
+    }, 100);
+    const timer = setTimeout(() => done('no load event after 5 s'), 5000);
+    img.onload = () => { clearTimeout(timer); done(null); };
+    img.onerror = () => { clearTimeout(timer); done('load failed'); };
+    holder.append(img);
+    img.src = srcFor(c);
+  });
+}
+
+const asciiJSON = (o) => JSON.stringify(o, null, 1)
+  .replace(/[\u007f-\uffff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+(async () => {
+  // The root <svg> tag of each file, taken from the served file itself.
+  const rootTag = {};
+  const sources = document.getElementById('sources');
+  for (const f of [D, A, E, B, C]) {
+    let text = '';
+    try { text = await (await fetch(f)).text(); } catch (e) { text = 'fetch failed: ' + e; }
+    rootTag[f] = (text.match(/<svg[^>]*>/) || ['?'])[0].replace(' xmlns="http://www.w3.org/2000/svg"', '');
+    const views = (text.match(/<view[^>]*>/g) || []).join('\n');
+    const h = document.createElement('div');
+    h.innerHTML = '<p><b>' + f + '</b> (grid of 100-unit cells omitted)</p><pre>' + esc(rootTag[f] + (views ? '\n  ' + views : '')) + '</pre>';
+    sources.append(h);
+  }
+  const codeFor = (c, style) => '<img src="' + srcFor(c) + '"' + (style ? ' style="' + style + '"' : '') + '>\n' + rootTag[c.file.split('?')[0]];
+
+  const regionResults = [];
+  const rbody = document.querySelector('#regions tbody');
+  for (const c of REGION_CASES) {
+    let r;
+    try { r = await measureRegion(c); } catch (e) { r = { reading: 'error', error: String(e) }; }
+    regionResults.push({ id: c.id, src: srcFor(c), reading: r.reading, cells: r.cells || null, control_expect: c.control || null, mf: c.mf || null, vbunits: c.vbunits || null, predict: c.predict || null, error: r.error || null, samples: r.samples || null });
+    const tr = document.createElement('tr');
+    const ctl = c.control ? (r.reading === c.control ? ' <span class="ok">control ok</span>' : ' <span class="bad">control FAILED, expected ' + c.control + '</span>') : '';
+    const pred = c.predict ? Object.entries(c.predict).map(([k, v]) => k + '=' + v).join(' ') : '';
+    tr.innerHTML = '<td>' + c.id + '</td><td><code></code></td><td><img class="live"></td><td><b>' + esc(r.reading) + '</b>' + ctl + '</td><td>' + (c.mf ? 'mf=' + esc(c.mf) + '<br>vbunits=' + esc(c.vbunits) : '') + '</td><td>' + pred + '</td>';
+    tr.querySelector('code').textContent = codeFor(c);
+    tr.querySelector('img.live').src = srcFor(c);
+    rbody.append(tr);
+  }
+
+  const ratioResults = [];
+  const tbody = document.querySelector('#ratios tbody');
+  for (const c of RATIO_CASES) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + c.id + '</td><td><code></code></td><td></td><td></td><td></td><td></td>';
+    tr.querySelector('code').textContent = c.then
+      ? '<img src="' + srcFor(c) + '"> loaded first, then\n' + codeFor({ file: c.file, frag: c.then }, 'width:200px')
+      : codeFor(c, 'width:200px');
+    tbody.append(tr);
+    // The first image is laid out in the same cell, so its view is really applied.
+    if (c.then) await measureRatio({ file: c.file, frag: c.frag }, tr.children[2]);
+    const r = await measureRatio(c.then ? { file: c.file, frag: c.then } : c, tr.children[2]);
+    const ctl = c.control !== undefined ? (r.height === c.control ? ' <span class="ok">control ok</span>' : ' <span class="bad">control FAILED, expected ' + c.control + '</span>') : '';
+    tr.children[3].innerHTML = '<b>' + r.height + '</b>' + ctl;
+    tr.children[4].textContent = r.natural;
+    tr.children[5].textContent = c.predict ? Object.entries(c.predict).map(([k, v]) => k + '=' + v).join(' ') : '';
+    ratioResults.push({ id: c.id, src: c.then ? srcFor({ file: c.file, frag: c.then }) : srcFor(c), loaded_first: c.then ? srcFor(c) : null, height: r.height, natural: r.natural, control_expect: c.control === undefined ? null : c.control, predict: c.predict || null, error: r.error || null });
+  }
+
+  const getR = (id) => regionResults.find(x => x.id === id);
+  const controls = {
+    none_full: getR('d_none').reading === 'full',
+    none_deterministic: !!getR('d_none').samples && JSON.stringify(getR('d_none').samples) === JSON.stringify(getR('d_none_again').samples),
+    view_applies_on_canvas: getR('d_view').reading === 'br-quarter',
+    ratio_none_100: ratioResults.find(x => x.id === 'c_none').height === 100,
+  };
+  const ua = navigator.userAgent;
+  const engine_hint = /Firefox\//.test(ua) ? 'gecko' : /Chrome\//.test(ua) ? 'blink' : /AppleWebKit\//.test(ua) ? 'webkit' : 'unknown';
+  const payload = {
+    probe: 'probe-fragment-sizing',
+    user_agent: ua,
+    engine_hint,
+    character_set: document.characterSet,
+    device_pixel_ratio: window.devicePixelRatio,
+    controls,
+    controls_passed: Object.values(controls).every(Boolean),
+    xywh_supported: getR('d_px_cell').reading === 'cell-1-1',
+    // Not part of controls_passed: Firefox 163 draws a viewBox-only SVG into the
+    // canvas so that b_none does not read "full"; then the b_ rows are only valid
+    // from the live <img> column (read-screenshot.py).
+    viewbox_only_canvas_ok: getR('b_none').reading === 'full',
+    regions: regionResults,
+    ratios: ratioResults,
+  };
+  document.getElementById('json').textContent = asciiJSON(payload);
+  document.getElementById('status').textContent = 'done; controls ' + (payload.controls_passed ? 'passed' : 'FAILED') + ', xywh supported: ' + payload.xywh_supported;
+})();
+</script>
+
+<script>
+// ---------------------------------------------------------------------------
+// Payload buttons. CANONICAL SOURCE: templates/probe-payload-buttons.html
+//
+// Do NOT hand-edit this block inside a probe. Edit the canonical file and run
+//     python3 tools/sync-probe-buttons.py --apply
+// which rewrites this block in templates/probe-template.html and in every
+// attributes/**/examples/probe-*.html, dom/**, elements/**. Before this tool
+// existed the 38 probes carried 9 different variants of it.
+//
+// Self-contained on purpose: it finds the payload <pre> itself (by #json, else
+// the last <pre> on the page), so it works with every probe style without
+// touching the probe's own logic.
+//
+// Two buttons:
+//   Copy JSON payload: clipboard, for pasting into a conversation or an editor.
+//   Download JSON: writes a correctly-named file where the browser supports
+//     it. MiniBrowser had no download UI until Karl added one on 2026-08-16;
+//     older builds render the blob instead of saving it, and Copy is the
+//     route there.
+//
+// Prefer the download where it works, because a saved file can be read selectively
+// and a pasted one cannot. But the Copy path is now safe too: probes render their
+// payload as ASCII-only JSON (\uXXXX escapes), so a clipboard-and-editor round trip
+// cannot change a byte. That mattered on 2026-08-15, when pasting a payload into a
+// text file re-encoded an em dash in a verdict key and made the row look missing.
+//
+// The downloaded bytes are IDENTICAL to what the page displays. Nothing is
+// injected at save time, so a pasted payload and a saved payload are the same
+// artifact; the run date lives in the filename instead.
+// ---------------------------------------------------------------------------
+(function () {
+  const pre = document.getElementById('json')
+    || [...document.querySelectorAll('pre')].pop();
+  if (!pre) return;
+
+  const bar = document.createElement('p');
+  bar.style.cssText = 'display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.5rem 0';
+
+  const mkBtn = (label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;padding:.3rem .8rem;cursor:pointer';
+    return b;
+  };
+  const copyBtn = mkBtn('Copy JSON payload');
+  const dlBtn = mkBtn('Download JSON');
+
+  const state = document.createElement('span');
+  state.setAttribute('role', 'status');
+  state.setAttribute('aria-live', 'polite');
+  state.style.cssText = 'font-size:12px;font-weight:700';
+
+  bar.append(copyBtn, dlBtn, state);
+  pre.parentNode.insertBefore(bar, pre);
+
+  const say = (msg, ok) => {
+    state.textContent = msg;
+    state.style.color = ok ? '#060' : '#a00';
+  };
+
+  // Refuse to hand over a payload the probe has not finished writing.
+  const payloadText = () => {
+    const text = pre.textContent.trim();
+    return (!text || text === '…') ? null : text;
+  };
+
+  // Browser + version for the filename. Order matters: Edge's UA contains
+  // "Chrome", and Chrome's contains "Safari", so the specific tests come first.
+  const browserTag = (ua, hint) => {
+    let m;
+    if ((m = /Firefox\/([\d.]+)/.exec(ua))) return 'firefox-' + m[1];
+    if ((m = /Edg\/([\d.]+)/.exec(ua))) return 'edge-' + m[1];
+    if ((m = /(?:Chrome|Chromium)\/([\d.]+)/.exec(ua))) return 'chrome-' + m[1];
+    if ((m = /Version\/([\d.]+)[^)]*Safari/.exec(ua))) return 'safari-' + m[1];
+    if (/AppleWebKit/.test(ua)) return 'webkit-unknown-version';
+    return (hint || 'unknown') + '-unknown-version';
+  };
+
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // run-<date>-<browser>-<version>-<probe>.json, matching the naming already
+  // used under <family>/reports/.
+  const suggestedFilename = (text) => {
+    let probe = '', ua = navigator.userAgent, hint = '';
+    try {
+      const p = JSON.parse(text);
+      probe = p.probe || '';
+      ua = p.user_agent || ua;
+      hint = p.engine_hint || '';
+    } catch (e) {
+      // A payload that is not valid JSON is worth saving anyway, so fall back to
+      // the document title so the file is still identifiable.
+      probe = (document.title || 'probe').toLowerCase();
+    }
+    if (!probe) probe = (document.title || 'probe').toLowerCase();
+    const d = new Date();
+    const date = [d.getFullYear(),
+                  String(d.getMonth() + 1).padStart(2, '0'),
+                  String(d.getDate()).padStart(2, '0')].join('-');
+    return ['run', date, browserTag(ua, hint), slug(probe)].join('-') + '.json';
+  };
+
+  copyBtn.addEventListener('click', async () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    // The async Clipboard API is frequently unavailable on file:// pages, so
+    // fall back to execCommand, and then to simply leaving the payload
+    // selected so ⌘C works.
+    try {
+      await navigator.clipboard.writeText(text);
+      say('copied ' + text.length.toLocaleString() + ' characters', true);
+      return;
+    } catch (e) { /* fall through to the selection path */ }
+
+    const range = document.createRange();
+    range.selectNodeContents(pre);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? 'copied ' + text.length.toLocaleString() + ' characters (fallback)'
+           : 'clipboard blocked. The payload is selected, press ⌘C', ok);
+  });
+
+  dlBtn.addEventListener('click', () => {
+    const text = payloadText();
+    if (!text) { say('the probe has not finished yet. Wait for "done"', false); return; }
+
+    const name = suggestedFilename(text);
+    try {
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Revoke on a timer rather than immediately: some engines have not
+      // finished reading the blob when click() returns.
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 10000);
+      // NOT "saved". Nothing here can tell whether a file was actually written:
+      // `'download' in HTMLAnchorElement.prototype` is true even in a browser with
+      // no download UI at all, so there is no feature test to run. MiniBrowser is
+      // exactly that case: the click renders the blob instead of saving it, and
+      // this used to claim success anyway (2026-08-15). Say what was attempted and
+      // let the person looking at their Downloads folder be the judge.
+      say('requested ' + name + '. If nothing appears in Downloads this browser has no '
+          + 'download UI: use Copy instead, the payload is ASCII-only so it survives any '
+          + 'editor', true);
+    } catch (e) {
+      say('download blocked (' + e.name + '). Use Copy instead', false);
+    }
+  });
+})();
+</script>
+
+</html>
